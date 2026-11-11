@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Instalar dependências Python
+        run: pip install -r requirements-dev.txt
+
+      - name: Instalar dependências Node
+        run: npm ci
+
+      - name: Compilar assets
+        run: npm run build
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Checagem do Django
+        run: python manage.py check
+
+      - name: Testes
+        run: python manage.py test --verbosity 1

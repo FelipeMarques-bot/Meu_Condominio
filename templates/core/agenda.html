@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}Agenda · {{ condominio.nome }}{% endblock %}
+{% block description %}Reserve salão, quiosque e churrasqueira no {{ condominio.nome }}.{% endblock %}
+
+{% block body %}
+<div class="min-h-dvh lg:grid lg:grid-cols-[17rem_1fr]" x-data="{ filtro: 'todos', aviso: false }">
+
+  <aside class="hidden bg-ink px-5 py-7 text-paper lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:overflow-y-auto">
+    <a href="{% url 'landing' %}" class="flex items-center gap-3" aria-label="Meu Condomínio, início">
+      <span class="grid h-9 w-9 place-items-center rounded-xl bg-paper font-display text-lg text-lagoon">m</span>
+      <span class="leading-tight">
+        <span class="block text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-paper/50">Meu Condomínio</span>
+        <span class="block font-display text-base">Gestão de espaços</span>
+      </span>
+    </a>
+
+    <nav class="mt-12 space-y-1" aria-label="Menu do condomínio">
+      <a href="{% url 'landing' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-paper/60 transition hover:bg-paper/5 hover:text-paper">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <path d="M4 11.5 12 5l8 6.5V20h-5v-5H9v5H4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        Início
+      </a>
+      <a href="{% url 'agenda' slug=condominio.slug %}" class="flex items-center gap-3 rounded-xl bg-paper/10 px-3 py-2.5 text-sm font-semibold text-paper" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <rect x="4" y="5" width="16" height="15" rx="2.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Agenda
+      </a>
+      <span class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-paper/35">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <path d="M5 7h14v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M9 7V5h6v2M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Reservas
+      </span>
+      <span class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-paper/35">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M5 20c.8-3.4 3.5-5 7-5s6.2 1.6 7 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Perfil
+      </span>
+    </nav>
+
+    <div class="mt-auto rounded-2xl border border-paper/10 bg-paper/5 p-4">
+      <p class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-sand">Ambiente demo</p>
+      <p class="mt-2 text-xs leading-relaxed text-paper/60">
+        Dados fictícios do {{ condominio.nome }}. O fluxo completo de reserva entra na próxima fase.
+      </p>
+    </div>
+  </aside>
+
+  <div class="flex min-h-dvh flex-col">
+    <header class="sticky top-0 z-20 border-b border-line/80 bg-paper/85 backdrop-blur">
+      <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+        <div class="flex items-center gap-3">
+          <span class="grid h-9 w-9 place-items-center rounded-xl bg-lagoon font-display text-lg text-paper lg:hidden">m</span>
+          <div>
+            <p class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">{{ condominio.nome }}</p>
+            <p class="font-display text-lg leading-tight">Agenda</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="pill hidden sm:inline-flex">
+            <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5" aria-hidden="true">
+              <rect x="4" y="5" width="16" height="15" rx="2.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            {% now "j \d\e F" %}
+          </span>
+          <span class="grid h-9 w-9 place-items-center rounded-full bg-sand text-xs font-semibold text-ink">{{ condominio.iniciais }}</span>
+        </div>
+      </div>
+    </header>
+
+    <main id="conteudo" class="mx-auto w-full max-w-6xl flex-1 px-5 pb-28 pt-8 sm:px-8 lg:pb-12 lg:pt-10">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p class="eyebrow">Reservas</p>
+          <h1 class="mt-2 font-display text-3xl font-light tracking-[-0.02em] sm:text-4xl">Escolha um espaço</h1>
+          <p class="mt-3 max-w-xl text-sm leading-relaxed text-muted">
+            Reserve com pelo menos {{ configuracao.antecedencia_minima_horas }} horas de antecedência.
+            O síndico tem até {{ configuracao.prazo_analise_horas }} horas para analisar o comprovante.
+          </p>
+        </div>
+        <span class="inline-flex w-fit items-center gap-2 rounded-full border border-line bg-white/60 px-3 py-1.5 text-[0.65rem] font-semibold text-muted">
+          <span class="h-1.5 w-1.5 rounded-full bg-ok"></span>
+          {{ locais|length }} espaços ativos
+        </span>
+      </div>
+
+      <div class="mt-7 flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filtrar por categoria">
+        <button type="button" class="chip" :class="{ 'chip-active': filtro === 'todos' }" @click="filtro = 'todos'">Todos</button>
+        <button type="button" class="chip" :class="{ 'chip-active': filtro === 'salao' }" @click="filtro = 'salao'">Salão</button>
+        <button type="button" class="chip" :class="{ 'chip-active': filtro === 'quiosque' }" @click="filtro = 'quiosque'">Quiosque</button>
+        <button type="button" class="chip" :class="{ 'chip-active': filtro === 'churrasqueira' }" @click="filtro = 'churrasqueira'">Churrasqueira</button>
+        <button type="button" class="chip" :class="{ 'chip-active': filtro === 'quadra' }" @click="filtro = 'quadra'">Quadra</button>
+      </div>
+
+      {% if locais %}
+        <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:gap-5">
+          {% for local in locais %}
+            <article
+              x-show="filtro === 'todos' || filtro === '{{ local.categoria }}'"
+              x-transition.opacity.duration.200ms
+              class="group flex flex-col overflow-hidden rounded-3xl border border-line bg-white/70 transition duration-300 hover:border-lagoon/30 hover:shadow-[0_24px_60px_-40px_rgba(12,27,31,0.5)]"
+            >
+              <div class="flex items-center justify-between gap-3 border-b border-line/70 px-5 py-3">
+                <span class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">{{ local.get_categoria_display }}</span>
+                <span class="inline-flex items-center gap-1.5 text-[0.63rem] font-semibold text-ok">
+                  <span class="h-1.5 w-1.5 rounded-full bg-ok"></span>
+                  Disponível
+                </span>
+              </div>
+
+              <div class="flex flex-1 flex-col p-5">
+                <h2 class="font-display text-2xl leading-tight">{{ local.nome }}</h2>
+                {% if local.descricao %}
+                  <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-muted">{{ local.descricao }}</p>
+                {% endif %}
+
+                <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+                  {% if local.capacidade %}
+                    <span>Até {{ local.capacidade }} pessoas</span>
+                  {% endif %}
+                  <span>Diária</span>
+                </div>
+
+                <div class="mt-6 flex items-end justify-between gap-4 border-t border-line/70 pt-4">
+                  <div>
+                    <p class="text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-muted">Valor</p>
+                    <p class="font-display text-xl">{{ local.valor_formatado }}</p>
+                  </div>
+                  <button type="button" class="btn btn-primary px-5 py-2.5" @click="aviso = true">
+                    Reservar
+                  </button>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="mt-6 rounded-3xl border border-dashed border-line bg-white/50 p-8 text-center">
+          <p class="font-display text-2xl">Nenhum espaço cadastrado</p>
+          <p class="mt-2 text-sm text-muted">Cadastre os locais no painel para começar a receber reservas.</p>
+        </div>
+      {% endif %}
+
+      <div class="mt-8 grid gap-4 rounded-3xl border border-line bg-white/50 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
+        <div>
+          <p class="text-sm font-semibold">Como funciona nesta prévia</p>
+          <p class="mt-1 text-sm leading-relaxed text-muted">
+            Os espaços e valores vêm do banco de dados. O fluxo de reserva, comprovante e aprovação
+            entra na Fase 1, com os prazos configurados por condomínio.
+          </p>
+        </div>
+        <a href="{% url 'landing' %}" class="btn btn-ghost w-fit">Voltar ao site</a>
+      </div>
+    </main>
+  </div>
+
+  <nav class="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:hidden" aria-label="Navegação inferior">
+    <div class="mx-auto flex max-w-md items-center justify-around">
+      <a href="{% url 'landing' %}" class="flex min-w-[4rem] flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-[0.62rem] font-semibold text-muted">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <path d="M4 11.5 12 5l8 6.5V20h-5v-5H9v5H4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+        Início
+      </a>
+      <a href="{% url 'agenda' slug=condominio.slug %}" class="flex min-w-[4rem] flex-col items-center gap-1 rounded-xl bg-lagoon/10 px-3 py-1.5 text-[0.62rem] font-semibold text-lagoon" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <rect x="4" y="5" width="16" height="15" rx="2.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Agenda
+      </a>
+      <span class="flex min-w-[4rem] flex-col items-center gap-1 px-3 py-1.5 text-[0.62rem] font-semibold text-muted/50">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <path d="M5 7h14v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M9 7V5h6v2M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Reservas
+      </span>
+      <span class="flex min-w-[4rem] flex-col items-center gap-1 px-3 py-1.5 text-[0.62rem] font-semibold text-muted/50">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M5 20c.8-3.4 3.5-5 7-5s6.2 1.6 7 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Perfil
+      </span>
+    </div>
+  </nav>
+
+  <div
+    x-cloak
+    x-show="aviso"
+    x-transition.opacity.duration.200ms
+    class="fixed inset-x-4 bottom-24 z-40 mx-auto max-w-md rounded-2xl bg-ink px-5 py-4 text-paper shadow-2xl lg:bottom-8"
+  >
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <p class="text-sm font-semibold">Prévia da agenda</p>
+        <p class="mt-1 text-xs leading-relaxed text-paper/70">
+          O fluxo de reserva, comprovante e aprovação entra na Fase 1. Os espaços e valores abaixo
+          já vêm do banco de dados.
+        </p>
+      </div>
+      <button type="button" class="rounded-full p-1 text-paper/60 transition hover:text-paper" @click="aviso = false" aria-label="Fechar aviso">
+        <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true">
+          <path d="m5 5 10 10M15 5 5 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}

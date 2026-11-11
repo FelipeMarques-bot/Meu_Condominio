@@ -1,0 +1,23 @@
+{% load vite %}
+<!doctype html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}{{ site_nome }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}Reservas de salão, quiosque e churrasqueira com Pix, análise do síndico e confirmação no celular.{% endblock %}">
+  <meta name="theme-color" content="#0E4A55">
+  <meta property="og:title" content="{% block og_title %}{{ site_nome }}{% endblock %}">
+  <meta property="og:description" content="Gestão de espaços para condomínios, sem planilha e sem troca de mensagens.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230E4A55'/%3E%3Cpath d='M8 22V10h4l4 6 4-6h4v12h-3.5v-6.4L16 21l-4.5-5.4V22z' fill='%23FAF7F2'/%3E%3C/svg%3E">
+  {% vite_css 'assets/app.js' %}
+</head>
+<body class="grain min-h-dvh bg-paper font-sans text-ink antialiased">
+  <a href="#conteudo" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-70 focus:rounded-full focus:bg-ink focus:px-4 focus:py-2 focus:text-sm focus:text-paper">
+    Pular para o conteúdo
+  </a>
+  {% block body %}{% endblock %}
+  {% vite_js 'assets/app.js' %}
+</body>
+</html>

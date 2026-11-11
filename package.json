@@ -1,0 +1,24 @@
+{
+  "name": "meu-condominio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource-variable/fraunces": "^5.2.5",
+    "@fontsource-variable/sora": "^5.2.5",
+    "alpinejs": "^3.14.9",
+    "animejs": "^4.0.2",
+    "htmx.org": "^2.0.6",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "tailwindcss": "^4.1.11",
+    "vite": "^7.1.3"
+  }
+}

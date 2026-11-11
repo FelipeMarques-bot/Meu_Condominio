@@ -1,0 +1,111 @@
+@import "@fontsource-variable/fraunces";
+@import "@fontsource-variable/sora";
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Sora Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces Variable", ui-serif, Georgia, serif;
+
+  --color-paper: #faf7f2;
+  --color-ink: #0c1b1f;
+  --color-lagoon: #0e4a55;
+  --color-lagoon-soft: #12626f;
+  --color-clay: #a9553a;
+  --color-clay-deep: #8f452f;
+  --color-sand: #e7c9a9;
+  --color-sage: #8fa98b;
+  --color-line: #e5ded3;
+  --color-muted: #5c6b6a;
+  --color-ok: #2e7d5b;
+  --color-warn: #b8792a;
+  --color-danger: #b23a3a;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-clay);
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition duration-200;
+  }
+
+  .btn-primary {
+    @apply bg-ink text-paper hover:bg-lagoon;
+  }
+
+  .btn-clay {
+    @apply bg-clay text-white hover:bg-clay-deep;
+  }
+
+  .btn-ghost {
+    @apply border border-line bg-white/60 text-ink hover:border-lagoon/40 hover:bg-white;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-2 rounded-full border border-line bg-white/70 px-3 py-1 text-[0.7rem] font-semibold text-muted;
+  }
+
+  .eyebrow {
+    @apply text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-clay;
+  }
+
+  .card {
+    @apply rounded-3xl border border-line bg-white/75 backdrop-blur;
+  }
+
+  .chip {
+    @apply inline-flex shrink-0 items-center rounded-full border border-line bg-white/60 px-4 py-2 text-xs font-semibold text-muted transition hover:border-lagoon/40 hover:text-ink;
+  }
+
+  .chip-active {
+    @apply border-ink bg-ink text-paper hover:text-paper;
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-line bg-white px-4 py-3 text-sm text-ink placeholder:text-muted/60 focus:border-lagoon/40 focus:outline-none;
+  }
+}
+
+@layer utilities {
+  [x-cloak] {
+    display: none !important;
+  }
+
+  .grain::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
