@@ -80,6 +80,31 @@ export function montarHero(container) {
 
   window.addEventListener("pointermove", aoMover, { passive: true });
 
+  const secao = container.closest("section") ?? container.parentElement;
+  const permiteMovimento = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let alvoProgresso = 0;
+  let progresso = 0;
+  let quadroScroll = 0;
+
+  function medirProgresso() {
+    quadroScroll = 0;
+    if (!permiteMovimento || !secao) return;
+    const caixa = secao.getBoundingClientRect();
+    const percorrido = -caixa.top;
+    alvoProgresso = Math.min(Math.max(percorrido / Math.max(caixa.height, 1), 0), 1);
+  }
+
+  function aoRolar() {
+    if (quadroScroll) return;
+    quadroScroll = requestAnimationFrame(medirProgresso);
+  }
+
+  if (permiteMovimento && secao) {
+    medirProgresso();
+    window.addEventListener("scroll", aoRolar, { passive: true });
+    window.addEventListener("resize", aoRolar);
+  }
+
   function ajustarTamanho() {
     const { width, height } = container.getBoundingClientRect();
     if (!width || !height) return;
@@ -93,35 +118,65 @@ export function montarHero(container) {
   ajustarTamanho();
 
   const relogio = new THREE.Clock();
+  let tempo = 0;
   let animacao = 0;
   let ativo = true;
+  let visivel = true;
 
   function animar() {
-    if (!ativo) return;
+    if (!ativo || !visivel) return;
     animacao = requestAnimationFrame(animar);
 
-    const tempo = relogio.getElapsedTime();
+    tempo += Math.min(relogio.getDelta(), 0.1);
     ponteiro.x += (alvo.x - ponteiro.x) * 0.045;
     ponteiro.y += (alvo.y - ponteiro.y) * 0.045;
+    progresso += (alvoProgresso - progresso) * 0.075;
 
-    grupo.rotation.y = tempo * 0.06 + ponteiro.x * 0.12;
-    grupo.rotation.x = ponteiro.y * 0.08;
+    const p = progresso;
+
+    camera.position.set(
+      -p * 0.55 + ponteiro.x * 0.16,
+      p * 0.85 - ponteiro.y * 0.1,
+      7.2 - p * 0.85,
+    );
+    camera.lookAt(0.25, 0, 0);
+
+    grupo.position.set(1.15 - p * 0.95, 0.1 - p * 0.7, p * 0.45);
+    grupo.rotation.y = tempo * 0.06 + ponteiro.x * 0.12 + p * 1.05;
+    grupo.rotation.x = ponteiro.y * 0.08 + p * 0.4;
+    grupo.rotation.z = p * -0.12;
+    grupo.scale.setScalar(1 + p * 0.08);
+
+    materialLinha.opacity = 0.26 - p * 0.12;
+    pontos.material.opacity = 0.55 - p * 0.22;
 
     aneis.forEach((anel, indice) => {
-      anel.rotation.z = tempo * (0.03 + indice * 0.012);
+      anel.rotation.z = tempo * (0.03 + indice * 0.012) + p * (0.4 + indice * 0.25);
     });
 
-    pontos.rotation.y = -tempo * 0.03;
+    pontos.rotation.y = -tempo * 0.03 - p * 0.5;
 
     renderer.render(cena, camera);
   }
+
+  const observadorVisivel = new IntersectionObserver(
+    ([entrada]) => {
+      visivel = entrada.isIntersecting;
+      if (visivel && ativo) {
+        cancelAnimationFrame(animacao);
+        animar();
+      }
+    },
+    { threshold: 0 },
+  );
+  observadorVisivel.observe(container);
 
   animar();
 
   function aoTrocarVisibilidade() {
     ativo = !document.hidden;
-    if (ativo) {
-      relogio.start();
+    if (ativo && visivel) {
+      cancelAnimationFrame(animacao);
       animar();
     } else {
       cancelAnimationFrame(animacao);
@@ -133,8 +188,12 @@ export function montarHero(container) {
   return () => {
     ativo = false;
     cancelAnimationFrame(animacao);
+    cancelAnimationFrame(quadroScroll);
     observador.disconnect();
+    observadorVisivel.disconnect();
     window.removeEventListener("pointermove", aoMover);
+    window.removeEventListener("scroll", aoRolar);
+    window.removeEventListener("resize", aoRolar);
     document.removeEventListener("visibilitychange", aoTrocarVisibilidade);
     renderer.dispose();
     container.remove();

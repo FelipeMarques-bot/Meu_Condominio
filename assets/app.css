@@ -156,6 +156,11 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  [data-tilt-scroll] {
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

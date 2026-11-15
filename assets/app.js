@@ -30,3 +30,34 @@ if (podeUsarTresD && !prefereMenosMovimento && canvasHero) {
       canvasHero.remove();
     });
 }
+
+const elementosTilt = document.querySelectorAll("[data-tilt-scroll]");
+
+if (!prefereMenosMovimento && elementosTilt.length) {
+  let quadro = 0;
+
+  const atualizarTilt = () => {
+    quadro = 0;
+    const alturaJanela = window.innerHeight;
+
+    elementosTilt.forEach((elemento) => {
+      const caixa = elemento.getBoundingClientRect();
+      const progresso = Math.min(
+        Math.max((alturaJanela - caixa.top) / (alturaJanela + caixa.height), 0),
+        1,
+      );
+      const inclinacao = (0.5 - progresso) * 2;
+
+      elemento.style.transform = `perspective(1400px) rotateX(${(inclinacao * 6).toFixed(2)}deg) rotateY(${(inclinacao * -5).toFixed(2)}deg) translateZ(${(progresso * 24).toFixed(1)}px)`;
+    });
+  };
+
+  const agendarTilt = () => {
+    if (quadro) return;
+    quadro = requestAnimationFrame(atualizarTilt);
+  };
+
+  atualizarTilt();
+  window.addEventListener("scroll", agendarTilt, { passive: true });
+  window.addEventListener("resize", agendarTilt);
+}
