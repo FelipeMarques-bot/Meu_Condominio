@@ -43,6 +43,7 @@ class OnboardingTests(TestCase):
             resposta["Location"], reverse("gestao", args=[condominio.slug])
         )
         self.assertEqual(condominio.slug, "jardim-das-flores")
+        self.assertEqual(condominio.plano.slug, "essencial")
         self.assertTrue(condominio.em_trial)
         self.assertGreaterEqual(condominio.dias_de_trial, 13)
         self.assertTrue(ConfiguracaoCondominio.objects.filter(condominio=condominio).exists())

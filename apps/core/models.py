@@ -11,11 +11,49 @@ def novo_segredo_webhook() -> str:
     return secrets.token_hex(32)
 
 
+class Plano(models.Model):
+    nome = models.CharField(max_length=60)
+    slug = models.SlugField(max_length=60, unique=True)
+    ordem = models.PositiveSmallIntegerField(default=1)
+    preco_mensal = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    limite_unidades = models.PositiveIntegerField(
+        default=0, help_text="0 significa ilimitado."
+    )
+    limite_locais = models.PositiveIntegerField(
+        default=0, help_text="0 significa ilimitado."
+    )
+    descricao = models.CharField(max_length=200, blank=True)
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["ordem", "preco_mensal"]
+        verbose_name = "plano"
+        verbose_name_plural = "planos"
+
+    def __str__(self) -> str:
+        return self.nome
+
+    @classmethod
+    def para_quantidade(cls, unidades: int):
+        planos = cls.objects.filter(ativo=True).order_by("ordem")
+        for plano in planos:
+            if plano.limite_unidades == 0 or unidades <= plano.limite_unidades:
+                return plano
+        return planos.last()
+
+
 class Condominio(models.Model):
     nome = models.CharField(max_length=120)
     slug = models.SlugField(max_length=60, unique=True)
     logo = models.ImageField(upload_to="condominios/logos/", blank=True)
     ativo = models.BooleanField(default=True)
+    plano = models.ForeignKey(
+        Plano,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="condominios",
+    )
     trial_ate = models.DateTimeField(
         null=True,
         blank=True,

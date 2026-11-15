@@ -159,10 +159,13 @@ class ReservaFlowTests(TestCase):
             self.condominio, self.local, self.unidade, self.morador
         )
         arquivo = SimpleUploadedFile(
-            "comprovante.png", b"conteudo-fake", content_type="image/png"
+            "comprovante.png",
+            b"\x89PNG\r\n\x1a\nconteudo-fake",
+            content_type="image/png",
         )
 
         resposta = self.client.post(
+
             reverse(
                 "enviar_comprovante",
                 kwargs={"slug": self.condominio.slug, "pk": reserva.pk},
@@ -187,10 +190,13 @@ class ReservaFlowTests(TestCase):
         reserva.expira_em = timezone.now() - timedelta(minutes=1)
         reserva.save(update_fields=["expira_em"])
         arquivo = SimpleUploadedFile(
-            "comprovante.png", b"conteudo-fake", content_type="image/png"
+            "comprovante.png",
+            b"\x89PNG\r\n\x1a\nconteudo-fake",
+            content_type="image/png",
         )
 
         self.client.post(
+
             reverse(
                 "enviar_comprovante",
                 kwargs={"slug": self.condominio.slug, "pk": reserva.pk},

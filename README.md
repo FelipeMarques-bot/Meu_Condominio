@@ -19,6 +19,8 @@ SaaS multi-condomínio para reserva de espaços: agenda no celular, Pix com comp
 - Gestão do condomínio: identidade (logo e cores), CRUD de locais com foto, unidades e convites.
 - Comprovantes em storage privado (fora da `MEDIA_URL`), servidos só por view com permissão.
 - Pix dinâmico com AbacatePay: cada condomínio usa a própria conta, credenciais criptografadas no banco e webhook idempotente que confirma a reserva na hora.
+- Planos por tamanho do condomínio (Essencial, Conforto, Pro e Rede), com sugestão automática pela quantidade de unidades.
+- Endurecimento de segurança: rate limit de login, verificação de assinatura real dos comprovantes, cookies `HttpOnly`/`SameSite`, admin em URL configurável e auditoria (bandit + pip-audit) no CI.
 - Configuração por condomínio com prazos padrão de 48 h (antecedência) e 24 h (análise), além do interruptor do Pix automático.
 - Landing page e prévia da agenda em mobile-first, com a paleta Lagoa.
 - Tailwind 4 + Vite, fontes self-hosted, Alpine.js, HTMX, Anime.js e Three.js (carregado só em telas grandes).
@@ -108,9 +110,11 @@ Sem o Vite, rode `npm run build` sempre que alterar `assets/`.
 ruff check .
 python manage.py check
 python manage.py test
+bandit -r apps config -ll -q
+pip-audit -r requirements.txt
 ```
 
-O CI roda os mesmos passos, além de `npm ci` e `npm run build`.
+O CI roda os mesmos passos (incluindo `check --deploy`, `bandit` e `pip-audit`), além de `npm ci` e `npm run build`.
 
 ## Estrutura
 
@@ -139,7 +143,16 @@ Variáveis principais (veja `.env.example`):
 | `DB_SSLMODE` | `require` para Neon |
 | `CSRF_TRUSTED_ORIGINS` | origem completa do deploy |
 | `CHAVE_CRIPTOGRAFIA` | opcional; chave estável para criptografar credenciais de gateway (sem ela, deriva da `SECRET_KEY`) |
+| `ADMIN_URL` | caminho do Django admin (padrão `admin/`; use algo difícil de adivinhar em produção) |
+| `CONFIAR_NO_PROXY` | usa o IP do `X-Forwarded-For` no rate limit (padrão `True` fora do `DEBUG`) |
+| `DJANGO_SUPERUSER_USERNAME` | usuário do superusuário criado no deploy |
+| `DJANGO_SUPERUSER_EMAIL` | e-mail do superusuário (opcional) |
+| `DJANGO_SUPERUSER_PASSWORD` | senha do superusuário (mínimo 12 caracteres) |
 | `VITE_DEV_SERVER` | servidor do Vite em desenvolvimento |
+
+### Superusuário sem código
+
+O deploy roda `python manage.py garantir_superusuario` (em `build.sh`). Ele lê apenas `DJANGO_SUPERUSER_USERNAME` e `DJANGO_SUPERUSER_PASSWORD` do ambiente: se as variáveis não existirem, não faz nada; se o usuário já existir, não altera a senha. Para redefinir depois, rode `python manage.py garantir_superusuario --atualizar-senha` com a nova senha no ambiente. Nada de usuário ou senha no repositório.
 
 No Neon, use o host com `-pooler` e mantenha `DB_DISABLE_SERVER_SIDE_CURSORS=True` (padrão).
 
@@ -152,6 +165,17 @@ No Neon, use o host com `-pooler` e mantenha `DB_DISABLE_SERVER_SIDE_CURSORS=Tru
 
 O plano free do Render hiberna; o primeiro acesso após inatividade pode demorar.
 
+## Planos
+
+| Plano | Preço/mês | Unidades | Espaços |
+|---|---|---|---|
+| Essencial | R$ 29,90 | até 20 | até 3 |
+| Conforto | R$ 59,90 | até 50 | até 6 |
+| Pro | R$ 99,90 | até 120 | até 12 |
+| Rede | R$ 189,90 | ilimitadas | ilimitados |
+
+Os planos ficam no banco (`Plano`), editáveis no admin, e a landing lista só os ativos. O onboarding coloca o condomínio no Essencial; o painel da plataforma mostra o plano atual, o preço e o plano sugerido pela quantidade de unidades.
+
 ## Próximas fases
 
 1. Conciliação diária de cobranças Pix (consulta à API) para eventos perdidos.
@@ -162,8 +186,13 @@ O plano free do Render hiberna; o primeiro acesso após inatividade pode demorar
 
 ## Segurança
 
-- Nunca comite `.env`, credenciais de gateway ou comprovantes reais.
+- Nunca comite `.env`, credenciais de gateway ou comprovantes reais; o superusuário vem de variáveis de ambiente.
 - Credenciais de gateway ficam criptografadas no banco (Fernet) e nunca são exibidas de volta.
-- O webhook do Pix confere o segredo por condomínio e a assinatura HMAC-SHA256 do corpo bruto antes de confirmar qualquer reserva.
+- O webhook do Pix confere o segredo por condomínio e a assinatura HMAC-SHA256 do corpo bruto antes de confirmar qualquer reserva, com limite de 64 KB e idempotência.
+- Login tem limite de 5 tentativas por IP + usuário em 15 minutos, com cache compartilhado no banco em produção.
+- Cookies de sessão e CSRF são `HttpOnly` e `SameSite=Lax`; em produção são `Secure`, com HSTS, `X-Frame-Options: DENY` e `nosniff`.
+- Uploads de comprovante checam extensão, MIME declarado, tamanho e assinatura real do arquivo (magic bytes).
+- O admin usa `ADMIN_URL` configurável; em produção use um caminho fora do óbvio.
+- CI roda `manage.py check --deploy`, `bandit` (médio+) e `pip-audit`, além dos testes.
 - Comprovantes devem ir para armazenamento privado em produção, com URL assinada.
 - O repositório permanece público durante o desenvolvimento; antes do lançamento comercial, torne-o privado e ative branch protection.

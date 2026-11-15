@@ -26,7 +26,8 @@ class ErroAbacatePay(Exception):
 
 
 def _abrir(requisicao, timeout):
-    return urllib.request.urlopen(requisicao, timeout=timeout)
+    # BASE_URL é https fixa; o caminho vem do código, nunca do usuário.
+    return urllib.request.urlopen(requisicao, timeout=timeout)  # nosec B310
 
 
 def _mensagem_de_erro(exc: urllib.error.HTTPError) -> str:

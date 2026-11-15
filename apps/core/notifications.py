@@ -135,7 +135,8 @@ def enviar_telegram(condominio, texto: str) -> bool:
     )
 
     try:
-        with urllib.request.urlopen(
+        # URL fixa da API do Telegram (https), sem entrada do usuário.
+        with urllib.request.urlopen(  # nosec B310
             requisicao, timeout=settings.TELEGRAM_TIMEOUT
         ) as resposta:
             return resposta.status == 200

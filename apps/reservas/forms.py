@@ -142,6 +142,12 @@ class ComprovanteForm(forms.Form):
         "application/pdf",
     }
     EXTENSOES = {".jpg", ".jpeg", ".png", ".webp", ".pdf"}
+    ASSINATURAS = {
+        "image/jpeg": (b"\xff\xd8\xff",),
+        "image/png": (b"\x89PNG\r\n\x1a\n",),
+        "image/webp": (b"RIFF",),
+        "application/pdf": (b"%PDF-",),
+    }
 
     def clean_comprovante(self):
         arquivo = self.cleaned_data["comprovante"]
@@ -152,4 +158,19 @@ class ComprovanteForm(forms.Form):
         extensao = arquivo.name.lower().rsplit(".", 1)[-1]
         if f".{extensao}" not in self.EXTENSOES:
             raise forms.ValidationError("Extensão de arquivo não permitida.")
+
+        arquivo.seek(0)
+        cabecalho = arquivo.read(16)
+        arquivo.seek(0)
+        if not any(
+            cabecalho.startswith(assinatura)
+            for assinatura in self.ASSINATURAS[arquivo.content_type]
+        ):
+            raise forms.ValidationError(
+                "O conteúdo do arquivo não corresponde ao formato informado."
+            )
+        if arquivo.content_type == "image/webp" and cabecalho[8:12] != b"WEBP":
+            raise forms.ValidationError(
+                "O conteúdo do arquivo não corresponde ao formato informado."
+            )
         return arquivo

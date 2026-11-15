@@ -49,7 +49,8 @@ def vite_js(entry: str):
     item = _manifest().get(entry)
     if not item:
         if settings.DEBUG:
-            return mark_safe(
+            # Comentário HTML constante, sem entrada do usuário.
+            return mark_safe(  # nosec B308
                 "<!-- assets ainda não compilados: execute npm run build -->"
             )
         raise RuntimeError(f"Entrada Vite ausente no manifesto: {entry}")

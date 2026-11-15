@@ -46,6 +46,16 @@
                 · {{ item.total_reservas }} reserva{{ item.total_reservas|pluralize }}
               </p>
               <p class="mt-1 text-[0.7rem] text-muted">
+                {% if item.plano %}
+                  Plano {{ item.plano.nome }} · R$ {{ item.plano.preco_mensal|floatformat:2 }}/mês
+                {% else %}
+                  Sem plano definido
+                {% endif %}
+                {% if item.plano_sugerido and item.plano_sugerido != item.plano %}
+                  · sugerido: {{ item.plano_sugerido.nome }} (R$ {{ item.plano_sugerido.preco_mensal|floatformat:2 }})
+                {% endif %}
+              </p>
+              <p class="mt-1 text-[0.7rem] text-muted">
                 {% if item.em_trial %}
                   Teste até {{ item.trial_ate|date:"d/m/Y" }} ({{ item.dias_de_trial }} dia{{ item.dias_de_trial|pluralize }} restante{{ item.dias_de_trial|pluralize }})
                 {% elif item.trial_ate %}

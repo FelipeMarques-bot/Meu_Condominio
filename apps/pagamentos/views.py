@@ -31,6 +31,9 @@ def webhook_abacatepay(request, slug, token):
     if condominio is None:
         return HttpResponse(status=404)
 
+    if len(request.body) > 64 * 1024:
+        return HttpResponse(status=413)
+
     configuracao = getattr(condominio, "configuracao", None)
     if configuracao is None:
         return _recusar()

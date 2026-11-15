@@ -24,7 +24,7 @@ from .forms import (
     OnboardingForm,
     UnidadeForm,
 )
-from .models import Condominio
+from .models import Condominio, Plano
 from .permissoes import gestao_required
 
 
@@ -49,7 +49,11 @@ def _slug_unico(condominio, nome: str, ignorar=None) -> str:
 
 
 def landing(request):
-    return render(request, "core/landing.html")
+    return render(
+        request,
+        "core/landing.html",
+        {"planos": Plano.objects.filter(ativo=True)},
+    )
 
 
 def _slug_condominio(nome: str) -> str:
@@ -81,6 +85,7 @@ def criar_condominio(request):
             condominio = Condominio.objects.create(
                 nome=dados["condominio"],
                 slug=dados["slug"] or _slug_condominio(dados["condominio"]),
+                plano=Plano.para_quantidade(1),
                 trial_ate=timezone.now() + timedelta(days=14),
             )
             unidade = Unidade.objects.create(
@@ -457,6 +462,8 @@ def plataforma_painel(request):
         total_locais=Count("locais", distinct=True),
         total_reservas=Count("reservas", distinct=True),
     ).order_by("nome")
+    for condominio in condominios:
+        condominio.plano_sugerido = Plano.para_quantidade(condominio.total_unidades)
 
     return render(
         request,

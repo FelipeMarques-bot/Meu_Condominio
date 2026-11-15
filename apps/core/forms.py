@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
+from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 
 from apps.reservas.models import Local
@@ -7,6 +8,7 @@ from apps.usuarios.forms import CadastroConviteForm
 from apps.usuarios.models import Unidade
 
 from .models import Condominio, ConfiguracaoCondominio
+from .seguranca import bloqueado, chave_tentativas, limpar, registrar_falha
 
 CAMPO_TEXTO = {"class": "field"}
 CAMPO_CHECKBOX = {"class": "h-4 w-4 rounded border-line text-lagoon"}
@@ -23,6 +25,21 @@ class EntrarForm(AuthenticationForm):
             attrs={**CAMPO_TEXTO, "autocomplete": "current-password"}
         ),
     )
+
+    def clean(self):
+        chave = chave_tentativas(self.request, self.data.get("username", ""))
+        if bloqueado(chave):
+            raise ValidationError(
+                "Muitas tentativas de login. Aguarde 15 minutos e tente de novo.",
+                code="login_bloqueado",
+            )
+        try:
+            dados = super().clean()
+        except ValidationError:
+            registrar_falha(chave)
+            raise
+        limpar(chave)
+        return dados
 
 
 class ConfiguracaoForm(forms.ModelForm):

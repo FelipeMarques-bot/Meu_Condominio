@@ -37,5 +37,22 @@ jobs:
       - name: Checagem do Django
         run: python manage.py check
 
+      - name: Checagem de deploy
+        run: python manage.py check --deploy
+        env:
+          DEBUG: "False"
+          SECRET_KEY: "ci-9fK2mQ7xV4bN1sR8tY6uH3jL5pW0zA2cE7gI4oM8qS1dF6hJ3k"
+          ALLOWED_HOSTS: "example.com"
+
+      - name: Auditoria de dependências
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt
+
+      - name: Análise estática de segurança
+        run: |
+          pip install bandit
+          bandit -r apps config -ll -q
+
       - name: Testes
         run: python manage.py test --verbosity 1
