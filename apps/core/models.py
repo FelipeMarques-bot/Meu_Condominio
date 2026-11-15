@@ -5,6 +5,7 @@ from django.db import models
 class Condominio(models.Model):
     nome = models.CharField(max_length=120)
     slug = models.SlugField(max_length=60, unique=True)
+    logo = models.ImageField(upload_to="condominios/logos/", blank=True)
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 

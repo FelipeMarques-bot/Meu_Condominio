@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 
 from apps.core.models import Condominio, ConfiguracaoCondominio
 from apps.reservas.models import Local
-from apps.usuarios.models import Unidade
+from apps.usuarios.models import Unidade, Usuario, VinculoUnidade
 
 LOCAIS = [
     {
@@ -52,6 +52,11 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--slug", default="bela-vista")
         parser.add_argument("--nome", default="Condomínio Bela Vista")
+        parser.add_argument(
+            "--usuarios",
+            action="store_true",
+            help="Cria morador, síndico, administradora e dono da plataforma (senha demo1234).",
+        )
 
     def handle(self, *args, **options):
         slug = options["slug"]
@@ -72,8 +77,44 @@ class Command(BaseCommand):
                 condominio=condominio, slug=dados["slug"], defaults=dados
             )
 
+        if options["usuarios"]:
+            self._criar_usuarios(condominio)
+
         acao = "criado" if criado else "atualizado"
         endereco = f"/c/{condominio.slug}/agenda/"
         self.stdout.write(
             self.style.SUCCESS(f"Condomínio de demonstração {acao}: {condominio.nome} ({endereco})")
         )
+
+    def _criar_usuarios(self, condominio):
+        unidade = condominio.unidades.filter(bloco="A", numero="101").first()
+        if unidade is None:
+            unidade = Unidade.objects.create(
+                condominio=condominio, bloco="A", numero="101"
+            )
+
+        combinacoes = [
+            ("morador", "Morador Demo", VinculoUnidade.Papel.MORADOR),
+            ("sindico", "Síndico Demo", VinculoUnidade.Papel.SINDICO),
+            ("gestora", "Administradora Demo", VinculoUnidade.Papel.ADMINISTRADORA),
+        ]
+
+        for username, nome, papel in combinacoes:
+            usuario, criado = Usuario.objects.get_or_create(
+                username=username,
+                defaults={"email": f"{username}@example.com", "first_name": nome},
+            )
+            if criado:
+                usuario.set_password("demo1234")
+                usuario.save(update_fields=["password"])
+            VinculoUnidade.objects.get_or_create(
+                usuario=usuario, unidade=unidade, papel=papel
+            )
+
+        if not Usuario.objects.filter(username="dono").exists():
+            Usuario.objects.create_superuser(
+                username="dono",
+                email="dono@example.com",
+                password="demo1234",
+                first_name="Dono da Plataforma",
+            )

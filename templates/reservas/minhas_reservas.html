@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Minhas reservas · {{ condominio.nome }}{% endblock %}
+
+{% block body %}
+{% include "partials/topbar.html" with ativo="reservas" %}
+
+<main id="conteudo" class="mx-auto w-full max-w-4xl px-5 pb-24 pt-8 sm:px-8 lg:pb-16">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <p class="eyebrow">Sua conta</p>
+      <h1 class="mt-2 font-display text-3xl font-light tracking-[-0.02em] sm:text-4xl">Minhas reservas</h1>
+      <p class="mt-3 text-sm leading-relaxed text-muted">Acompanhe o comprovante, o prazo de análise e o código de check-in.</p>
+    </div>
+    <a href="{% url 'agenda' slug=condominio.slug %}" class="btn btn-primary w-fit">Nova reserva</a>
+  </div>
+
+  {% include "reservas/_calendario.html" %}
+
+  <h2 class="mt-10 font-display text-2xl">Todas as reservas</h2>
+  {% if reservas %}
+    <ul class="mt-4 space-y-3">
+      {% for reserva in reservas %}
+        <li class="card p-4 sm:p-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p class="font-display text-xl leading-tight">{{ reserva.local.nome }}</p>
+              <p class="mt-1 text-xs text-muted">
+                {{ reserva.inicio|date:"d/m/Y" }} · {{ reserva.inicio|time:"H:i" }} às {{ reserva.fim|time:"H:i" }}
+                · {{ reserva.unidade.rotulo }}
+              </p>
+            </div>
+            <span class="pill
+              {% if reserva.status == 'confirmada' %}border-ok/30 bg-ok/10 text-ok
+              {% elif reserva.status == 'em_analise' %}border-lagoon/30 bg-lagoon/10 text-lagoon
+              {% elif reserva.status == 'rejeitada' %}border-danger/30 bg-danger/10 text-danger
+              {% elif reserva.status == 'aguardando_comprovante' %}border-warn/30 bg-warn/10 text-warn
+              {% else %}border-line text-muted{% endif %}">
+              {{ reserva.get_status_display }}
+            </span>
+          </div>
+
+          <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm font-semibold">R$ {{ reserva.valor|floatformat:2 }}</p>
+            <a href="{% url 'reserva_detalhe' slug=condominio.slug pk=reserva.pk %}" class="btn btn-ghost px-4 py-2 text-xs">
+              Ver detalhes
+            </a>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="mt-8 rounded-3xl border border-dashed border-line bg-white/50 p-10 text-center">
+      <p class="font-display text-2xl">Nenhuma reserva por aqui</p>
+      <p class="mt-2 text-sm text-muted">Escolha um espaço na agenda para começar.</p>
+      <a href="{% url 'agenda' slug=condominio.slug %}" class="btn btn-primary mt-6">Ver espaços</a>
+    </div>
+  {% endif %}
+</main>
+{% endblock %}

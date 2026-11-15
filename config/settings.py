@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.usuarios",
     "apps.reservas",
+    "apps.pagamentos",
 ]
 
 MIDDLEWARE = [
@@ -149,7 +150,7 @@ EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Meu Condomínio <nao-responda@meucondominio.com.br>")
 
-LOGIN_URL = "landing"
+LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "landing"
 LOGOUT_REDIRECT_URL = "landing"
 

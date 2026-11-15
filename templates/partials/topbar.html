@@ -1,0 +1,42 @@
+<header class="sticky top-0 z-20 border-b border-line/80 bg-paper/85 backdrop-blur">
+  <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-5 py-3 sm:px-8">
+    <a href="{% url 'agenda' slug=condominio.slug %}" class="flex items-center gap-3" aria-label="{{ condominio.nome }}, agenda">
+      {% if condominio.logo %}
+        <img src="{{ condominio.logo.url }}" alt="" class="h-9 w-9 rounded-xl object-cover">
+      {% else %}
+        <span class="grid h-9 w-9 place-items-center rounded-xl bg-lagoon font-display text-sm text-paper">{{ condominio.iniciais }}</span>
+      {% endif %}
+      <span class="leading-tight">
+        <span class="block text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-muted">{{ condominio.nome }}</span>
+        <span class="block font-display text-base">Reservas</span>
+      </span>
+    </a>
+
+    <nav class="flex items-center gap-1 text-xs font-semibold text-muted" aria-label="Navegação da conta">
+      <a href="{% url 'minhas_reservas' slug=condominio.slug %}"
+         class="rounded-full px-3 py-2 transition {% if ativo == 'reservas' %}bg-lagoon/10 text-lagoon{% else %}hover:bg-white/70 hover:text-ink{% endif %}">
+        Reservas
+      </a>
+      {% if pode_aprovar %}
+        <a href="{% url 'painel' slug=condominio.slug %}"
+           class="rounded-full px-3 py-2 transition {% if ativo == 'painel' %}bg-lagoon/10 text-lagoon{% else %}hover:bg-white/70 hover:text-ink{% endif %}">
+          Painel
+        </a>
+      {% endif %}
+      {% if pode_gerir %}
+        <a href="{% url 'gestao' slug=condominio.slug %}"
+           class="rounded-full px-3 py-2 transition {% if ativo == 'gestao' %}bg-lagoon/10 text-lagoon{% else %}hover:bg-white/70 hover:text-ink{% endif %}">
+          Gestão
+        </a>
+      {% endif %}
+      {% if user.is_authenticated %}
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="rounded-full px-3 py-2 text-muted transition hover:bg-white/70 hover:text-ink">Sair</button>
+        </form>
+      {% else %}
+        <a href="{% url 'login' %}" class="rounded-full bg-ink px-4 py-2 text-paper transition hover:bg-lagoon">Entrar</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>

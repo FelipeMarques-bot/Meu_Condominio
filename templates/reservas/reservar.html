@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Reservar {{ local.nome }} · {{ condominio.nome }}{% endblock %}
+
+{% block body %}
+{% include "partials/topbar.html" with ativo="reservas" %}
+
+<main id="conteudo" class="mx-auto w-full max-w-4xl px-5 pb-24 pt-8 sm:px-8 lg:pb-16">
+  <a href="{% url 'agenda' slug=condominio.slug %}" class="inline-flex items-center gap-2 text-xs font-semibold text-muted transition hover:text-ink">
+    <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true"><path d="M12 5 7 10l5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Voltar à agenda
+  </a>
+
+  <div class="mt-4 grid gap-6 lg:grid-cols-[1fr_20rem] lg:items-start">
+    <section class="card p-6">
+      <p class="eyebrow">{{ local.get_categoria_display }}</p>
+      <h1 class="mt-2 font-display text-3xl font-light tracking-[-0.02em]">{{ local.nome }}</h1>
+      {% if local.descricao %}
+        <p class="mt-2 text-sm leading-relaxed text-muted">{{ local.descricao }}</p>
+      {% endif %}
+
+      <form method="post" class="mt-6 space-y-4">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-ink">
+            {{ form.non_field_errors|join:" " }}
+          </div>
+        {% endif %}
+
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div class="sm:col-span-3">
+            <label for="{{ form.data.id_for_label }}" class="text-xs font-semibold text-muted">{{ form.data.label }}</label>
+            <div class="mt-1">{{ form.data }}</div>
+            {% for erro in form.data.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
+          </div>
+          <div>
+            <label for="{{ form.hora_inicio.id_for_label }}" class="text-xs font-semibold text-muted">{{ form.hora_inicio.label }}</label>
+            <div class="mt-1">{{ form.hora_inicio }}</div>
+            {% for erro in form.hora_inicio.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
+          </div>
+          <div>
+            <label for="{{ form.hora_fim.id_for_label }}" class="text-xs font-semibold text-muted">{{ form.hora_fim.label }}</label>
+            <div class="mt-1">{{ form.hora_fim }}</div>
+            {% for erro in form.hora_fim.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
+          </div>
+          <div>
+            <label for="{{ form.unidade.id_for_label }}" class="text-xs font-semibold text-muted">{{ form.unidade.label }}</label>
+            <div class="mt-1">{{ form.unidade }}</div>
+            {% for erro in form.unidade.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-line bg-paper/60 p-4 text-xs leading-relaxed text-muted">
+          <p><span class="font-semibold text-ink">Antecedência mínima:</span> {{ configuracao.antecedencia_minima_horas }} horas.</p>
+          <p class="mt-1"><span class="font-semibold text-ink">Análise do síndico:</span> até {{ configuracao.prazo_analise_horas }} horas após o comprovante.</p>
+          <p class="mt-1"><span class="font-semibold text-ink">Limite por unidade:</span>
+            {% if configuracao.limite_reservas_mes %}{{ configuracao.limite_reservas_mes }} reservas por mês.
+            {% else %}sem limite mensal.{% endif %}
+          </p>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full sm:w-auto">Reservar e ir para o Pix</button>
+      </form>
+    </section>
+
+    <aside class="card p-5 lg:sticky lg:top-24">
+      <p class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">Resumo</p>
+      <p class="mt-2 font-display text-2xl">{{ local.nome }}</p>
+      <div class="mt-4 space-y-2 text-sm text-muted">
+        {% if local.capacidade %}<p>Até {{ local.capacidade }} pessoas</p>{% endif %}
+        <p>Valor do espaço</p>
+      </div>
+      <p class="mt-1 font-display text-2xl">{{ local.valor_formatado }}</p>
+      <p class="mt-4 text-xs leading-relaxed text-muted">
+        O horário fica reservado por 2 horas enquanto você envia o comprovante. Depois disso ele volta para a agenda.
+      </p>
+    </aside>
+  </div>
+</main>
+{% endblock %}

@@ -1,7 +1,15 @@
+import uuid
+from datetime import timedelta
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 from apps.core.models import Condominio
+
+
+def expiracao_padrao():
+    return timezone.now() + timedelta(days=7)
 
 
 class Usuario(AbstractUser):
@@ -71,3 +79,45 @@ class VinculoUnidade(models.Model):
 
     def __str__(self) -> str:
         return f"{self.usuario} · {self.unidade.rotulo} · {self.get_papel_display()}"
+
+
+class Convite(models.Model):
+    condominio = models.ForeignKey(
+        Condominio, on_delete=models.CASCADE, related_name="convites"
+    )
+    unidade = models.ForeignKey(Unidade, on_delete=models.CASCADE, related_name="convites")
+    papel = models.CharField(
+        max_length=20,
+        choices=VinculoUnidade.Papel.choices,
+        default=VinculoUnidade.Papel.MORADOR,
+    )
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    criado_por = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="convites_criados",
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+    expira_em = models.DateTimeField(default=expiracao_padrao)
+    usado_em = models.DateTimeField(null=True, blank=True)
+    usado_por = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="convites_usados",
+    )
+
+    class Meta:
+        ordering = ["-criado_em"]
+        verbose_name = "convite"
+        verbose_name_plural = "convites"
+
+    def __str__(self) -> str:
+        return f"{self.unidade.rotulo} · {self.get_papel_display()}"
+
+    @property
+    def valido(self) -> bool:
+        return self.usado_em is None and timezone.now() < self.expira_em

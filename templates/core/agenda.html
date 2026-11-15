@@ -8,7 +8,11 @@
 
   <aside class="hidden bg-ink px-5 py-7 text-paper lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:overflow-y-auto">
     <a href="{% url 'landing' %}" class="flex items-center gap-3" aria-label="Meu Condomínio, início">
-      <span class="grid h-9 w-9 place-items-center rounded-xl bg-paper font-display text-lg text-lagoon">m</span>
+      {% if condominio.logo %}
+        <img src="{{ condominio.logo.url }}" alt="" class="h-9 w-9 rounded-xl object-cover">
+      {% else %}
+        <span class="grid h-9 w-9 place-items-center rounded-xl bg-paper font-display text-sm text-lagoon">{{ condominio.iniciais }}</span>
+      {% endif %}
       <span class="leading-tight">
         <span class="block text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-paper/50">Meu Condomínio</span>
         <span class="block font-display text-base">Gestão de espaços</span>
@@ -29,20 +33,40 @@
         </svg>
         Agenda
       </a>
-      <span class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-paper/35">
+      <a href="{% url 'minhas_reservas' slug=condominio.slug %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-paper/60 transition hover:bg-paper/5 hover:text-paper">
         <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
           <path d="M5 7h14v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
           <path d="M9 7V5h6v2M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
         Reservas
-      </span>
-      <span class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-paper/35">
-        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
-          <circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M5 20c.8-3.4 3.5-5 7-5s6.2 1.6 7 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        Perfil
-      </span>
+      </a>
+      {% if pode_aprovar %}
+        <a href="{% url 'painel' slug=condominio.slug %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-paper/60 transition hover:bg-paper/5 hover:text-paper">
+          <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+            <path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Painel
+        </a>
+      {% endif %}
+      {% if pode_gerir %}
+        <a href="{% url 'gestao' slug=condominio.slug %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-paper/60 transition hover:bg-paper/5 hover:text-paper">
+          <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="9" cy="7" r="2" fill="currentColor"/>
+            <circle cx="15" cy="12" r="2" fill="currentColor"/>
+            <circle cx="8" cy="17" r="2" fill="currentColor"/>
+          </svg>
+          Gestão
+        </a>
+      {% endif %}
+      {% if not user.is_authenticated %}
+        <a href="{% url 'login' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-paper/60 transition hover:bg-paper/5 hover:text-paper">
+          <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+            <path d="M10 17l5-5-5-5M15 12H3M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Entrar
+        </a>
+      {% endif %}
     </nav>
 
     <div class="mt-auto rounded-2xl border border-paper/10 bg-paper/5 p-4">
@@ -57,7 +81,11 @@
     <header class="sticky top-0 z-20 border-b border-line/80 bg-paper/85 backdrop-blur">
       <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
         <div class="flex items-center gap-3">
-          <span class="grid h-9 w-9 place-items-center rounded-xl bg-lagoon font-display text-lg text-paper lg:hidden">m</span>
+          {% if condominio.logo %}
+            <img src="{{ condominio.logo.url }}" alt="" class="h-9 w-9 rounded-xl object-cover lg:hidden">
+          {% else %}
+            <span class="grid h-9 w-9 place-items-center rounded-xl bg-lagoon font-display text-sm text-paper lg:hidden">{{ condominio.iniciais }}</span>
+          {% endif %}
           <div>
             <p class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">{{ condominio.nome }}</p>
             <p class="font-display text-lg leading-tight">Agenda</p>
@@ -77,6 +105,15 @@
     </header>
 
     <main id="conteudo" class="mx-auto w-full max-w-6xl flex-1 px-5 pb-28 pt-8 sm:px-8 lg:pb-12 lg:pt-10">
+      {% if user.is_authenticated %}
+        <div class="mb-7 flex flex-col gap-1 rounded-3xl border border-lagoon/20 bg-lagoon/5 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p class="font-display text-xl font-light">
+            Olá, {{ user.first_name|default:user.username }}. Bem-vindo(a) ao {{ condominio.nome }}.
+          </p>
+          <a href="{% url 'minhas_reservas' slug=condominio.slug %}" class="text-xs font-semibold text-lagoon hover:underline">Ver minhas reservas →</a>
+        </div>
+      {% endif %}
+
       <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p class="eyebrow">Reservas</p>
@@ -108,6 +145,9 @@
               x-transition.opacity.duration.200ms
               class="group flex flex-col overflow-hidden rounded-3xl border border-line bg-white/70 transition duration-300 hover:border-lagoon/30 hover:shadow-[0_24px_60px_-40px_rgba(12,27,31,0.5)]"
             >
+              {% if local.foto %}
+                <img src="{{ local.foto.url }}" alt="{{ local.nome }}" class="h-44 w-full object-cover" loading="lazy">
+              {% endif %}
               <div class="flex items-center justify-between gap-3 border-b border-line/70 px-5 py-3">
                 <span class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">{{ local.get_categoria_display }}</span>
                 <span class="inline-flex items-center gap-1.5 text-[0.63rem] font-semibold text-ok">
@@ -134,9 +174,15 @@
                     <p class="text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-muted">Valor</p>
                     <p class="font-display text-xl">{{ local.valor_formatado }}</p>
                   </div>
-                  <button type="button" class="btn btn-primary px-5 py-2.5" @click="aviso = true">
-                    Reservar
-                  </button>
+                  {% if user.is_authenticated %}
+                    <a href="{% url 'reservar' slug=condominio.slug local_slug=local.slug %}" class="btn btn-primary px-5 py-2.5">
+                      Reservar
+                    </a>
+                  {% else %}
+                    <a href="{% url 'login' %}?next={% url 'reservar' slug=condominio.slug local_slug=local.slug %}" class="btn btn-primary px-5 py-2.5">
+                      Entrar para reservar
+                    </a>
+                  {% endif %}
                 </div>
               </div>
             </article>
@@ -154,7 +200,7 @@
           <p class="text-sm font-semibold">Como funciona nesta prévia</p>
           <p class="mt-1 text-sm leading-relaxed text-muted">
             Os espaços e valores vêm do banco de dados. O fluxo de reserva, comprovante e aprovação
-            entra na Fase 1, com os prazos configurados por condomínio.
+            já está ativo, com os prazos configurados por condomínio.
           </p>
         </div>
         <a href="{% url 'landing' %}" class="btn btn-ghost w-fit">Voltar ao site</a>
@@ -177,20 +223,45 @@
         </svg>
         Agenda
       </a>
-      <span class="flex min-w-[4rem] flex-col items-center gap-1 px-3 py-1.5 text-[0.62rem] font-semibold text-muted/50">
+      <a href="{% url 'minhas_reservas' slug=condominio.slug %}" class="flex min-w-[4rem] flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-[0.62rem] font-semibold text-muted">
         <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
           <path d="M5 7h14v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
           <path d="M9 7V5h6v2M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
         Reservas
-      </span>
-      <span class="flex min-w-[4rem] flex-col items-center gap-1 px-3 py-1.5 text-[0.62rem] font-semibold text-muted/50">
-        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
-          <circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M5 20c.8-3.4 3.5-5 7-5s6.2 1.6 7 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        Perfil
-      </span>
+      </a>
+      {% if pode_aprovar %}
+        <a href="{% url 'painel' slug=condominio.slug %}" class="flex min-w-[4rem] flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-[0.62rem] font-semibold text-muted">
+          <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+            <path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Painel
+        </a>
+      {% elif pode_gerir %}
+        <a href="{% url 'gestao' slug=condominio.slug %}" class="flex min-w-[4rem] flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-[0.62rem] font-semibold text-muted">
+          <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Gestão
+        </a>
+      {% elif not user.is_authenticated %}
+        <a href="{% url 'login' %}" class="flex min-w-[4rem] flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-[0.62rem] font-semibold text-muted">
+          <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+            <path d="M10 17l5-5-5-5M15 12H3M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Entrar
+        </a>
+      {% else %}
+        <form method="post" action="{% url 'logout' %}" class="min-w-[4rem]">
+          {% csrf_token %}
+          <button type="submit" class="flex w-full flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-[0.62rem] font-semibold text-muted">
+            <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+              <path d="M14 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2M18 12H9m9 0-3-3m3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Sair
+          </button>
+        </form>
+      {% endif %}
     </div>
   </nav>
 
@@ -204,7 +275,7 @@
       <div>
         <p class="text-sm font-semibold">Prévia da agenda</p>
         <p class="mt-1 text-xs leading-relaxed text-paper/70">
-          O fluxo de reserva, comprovante e aprovação entra na Fase 1. Os espaços e valores abaixo
+          O fluxo de reserva, comprovante e aprovação já está ativo. Os espaços e valores abaixo
           já vêm do banco de dados.
         </p>
       </div>

@@ -1,10 +1,12 @@
 @import "@fontsource-variable/fraunces";
 @import "@fontsource-variable/sora";
+@import "@fontsource-variable/caveat";
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Sora Variable", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces Variable", ui-serif, Georgia, serif;
+  --font-hand: "Caveat Variable", "Fraunces Variable", ui-serif, cursive;
 
   --color-paper: #faf7f2;
   --color-ink: #0c1b1f;
@@ -76,6 +78,63 @@
 
   .field {
     @apply w-full rounded-xl border border-line bg-white px-4 py-3 text-sm text-ink placeholder:text-muted/60 focus:border-lagoon/40 focus:outline-none;
+  }
+
+  .calendario-papel {
+    background-color: #fffdf7;
+    background-image:
+      radial-gradient(rgba(12, 27, 31, 0.045) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(231, 201, 169, 0.18), transparent 38%);
+    background-size: 16px 16px, 100% 100%;
+  }
+
+  .calendario-furos {
+    height: 1.15rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-line) 70%, transparent);
+    background-image: radial-gradient(circle at center, #e0d7c9 0 3.5px, transparent 4px);
+    background-size: 1.55rem 100%;
+    background-repeat: repeat-x;
+    background-position: center;
+  }
+
+  .calendario-dia {
+    @apply relative min-h-[4.9rem] border-b border-r border-line/60 p-1.5 sm:min-h-[6.4rem] sm:p-2;
+  }
+
+  .calendario-dia:nth-child(7n) {
+    @apply border-r-0;
+  }
+
+  .calendario-fora {
+    @apply bg-paper/50;
+  }
+
+  .calendario-hoje {
+    @apply bg-clay/5;
+  }
+
+  .calendario-numero {
+    @apply font-hand text-xl leading-none text-ink/80 sm:text-2xl;
+  }
+
+  .calendario-hoje .calendario-numero {
+    @apply inline-flex h-7 w-7 items-center justify-center rounded-full border border-clay/40 bg-clay/10 text-clay;
+  }
+
+  .calendario-anotacao {
+    @apply mt-0.5 font-hand text-[0.9rem] leading-[1.1] text-lagoon;
+  }
+
+  .calendario-dia:nth-child(3n) .calendario-anotacao {
+    transform: rotate(-1.4deg);
+  }
+
+  .calendario-dia:nth-child(4n + 1) .calendario-anotacao {
+    transform: rotate(0.9deg);
+  }
+
+  .calendario-ponto {
+    @apply inline-block h-1.5 w-1.5 rounded-full;
   }
 }
 

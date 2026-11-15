@@ -2,13 +2,18 @@
 
 SaaS multi-condomínio para reserva de espaços: agenda no celular, Pix com comprovante, análise do síndico e confirmação com check-in.
 
-**Status:** Fase 0 concluída — fundação técnica, identidade visual e prévia navegável da agenda.
+**Status:** Fase 1 concluída — autenticação, convites de unidade, reserva com hold, Pix manual e painel do síndico.
 
 ## O que já existe
 
 - Django 5.2 com usuário customizado desde a primeira migração.
 - Isolamento multi-tenant por `condominio_id` com `TenantMiddleware`, `TenantManager` e testes de vazamento.
-- Modelos iniciais: `Condominio`, `ConfiguracaoCondominio`, `Usuario`, `Unidade`, `VinculoUnidade`, `Local` e `Reserva`.
+- Modelos: `Condominio`, `ConfiguracaoCondominio`, `Usuario`, `Unidade`, `VinculoUnidade`, `Convite`, `Local` e `Reserva`.
+- Login, convite por link com cadastro do morador e vínculo automático à unidade.
+- Reserva com antecedência configurável, limite mensal por unidade, hold de 2 horas e bloqueio de conflito.
+- Pix manual com BR Code (QR e copia e cola), envio de comprovante e prazo de análise do síndico.
+- Painel do síndico com fila de análise, confirmação com código de check-in, recusa com motivo e e-mails automáticos.
+- Painel do morador com calendário de papel (seleção de mês) e marcações manuscritas das reservas por dia.
 - Configuração por condomínio com prazos padrão de 48 h (antecedência) e 24 h (análise), além do interruptor do Pix automático.
 - Landing page e prévia da agenda em mobile-first, com a paleta Lagoa.
 - Tailwind 4 + Vite, fontes self-hosted, Alpine.js, HTMX, Anime.js e Three.js (carregado só em telas grandes).
@@ -107,11 +112,12 @@ O CI roda os mesmos passos, além de `npm ci` e `npm run build`.
 ```text
 apps/
   core/        condomínio, configuração, tenant, landing e agenda
-  usuarios/    usuário, unidade e vínculo
-  reservas/    local e reserva
+  usuarios/    usuário, unidade, vínculo e convite
+  reservas/    local, reserva, formulários e views do fluxo
+  pagamentos/  BR Code Pix (payload EMV + QR)
 assets/        entrada do Vite (CSS/JS, hero 3D)
 config/        settings, URLs, WSGI/ASGI
-templates/     base, landing e agenda
+templates/     base, landing, agenda, login, convites, configurações e reservas
 static/        arquivos estáticos e build do Vite
 ```
 
@@ -142,12 +148,11 @@ O plano free do Render hiberna; o primeiro acesso após inatividade pode demorar
 
 ## Próximas fases
 
-1. Autenticação, onboarding do condomínio e convite/claim de unidade.
-2. Fluxo completo de reserva: seleção de horário, hold, comprovante e painel de análise.
-3. Pix manual (BR Code) e Pix dinâmico (Asaas/AbacatePay) atrás do interruptor por condomínio.
-4. OCR de comprovante com Tesseract, regras de validação e fila de revisão.
-5. Notificações (e-mail, push PWA, Telegram e link de WhatsApp).
-6. Bloqueios, políticas, relatórios e assinatura do SaaS.
+1. Onboarding self-service do condomínio pela interface, com unidades, locais e fotos.
+2. Pix dinâmico (Asaas/AbacatePay) atrás do interruptor por condomínio e webhook idempotente.
+3. OCR de comprovante com Tesseract, regras de validação e fila de revisão.
+4. Notificações push PWA, Telegram ativo por padrão no painel e link de WhatsApp ao morador.
+5. Bloqueios por inadimplência, políticas automáticas, relatórios e assinatura do SaaS.
 
 ## Segurança
 

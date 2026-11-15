@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Q
+from django.utils import timezone
 
 from apps.core.models import Condominio
 from apps.core.tenancy import TenantManager
@@ -27,6 +28,7 @@ class Local(models.Model):
     descricao = models.TextField(blank=True)
     capacidade = models.PositiveSmallIntegerField(default=0)
     valor = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    foto = models.ImageField(upload_to="locais/", blank=True)
     ativo = models.BooleanField(default=True)
     ordem = models.PositiveSmallIntegerField(default=0)
     criado_em = models.DateTimeField(auto_now_add=True)
@@ -78,8 +80,11 @@ class Reserva(models.Model):
         max_length=30, choices=Status.choices, default=Status.AGUARDANDO_COMPROVANTE
     )
     comprovante = models.FileField(upload_to="comprovantes/%Y/%m/", blank=True)
+    comprovante_enviado_em = models.DateTimeField(null=True, blank=True)
+    expira_em = models.DateTimeField(null=True, blank=True)
     prazo_analise_em = models.DateTimeField(null=True, blank=True)
     confirmado_em = models.DateTimeField(null=True, blank=True)
+    codigo_checkin = models.CharField(max_length=8, blank=True)
     motivo_rejeicao = models.TextField(blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -112,3 +117,22 @@ class Reserva(models.Model):
             errors["fim"] = "O término deve ser posterior ao início."
         if errors:
             raise ValidationError(errors)
+
+    @property
+    def prazo_vencido(self) -> bool:
+        return bool(self.prazo_analise_em and timezone.now() > self.prazo_analise_em)
+
+    @property
+    def hold_vencido(self) -> bool:
+        return bool(
+            self.status == self.Status.AGUARDANDO_COMPROVANTE
+            and self.expira_em
+            and timezone.now() > self.expira_em
+        )
+
+    @property
+    def pode_receber_comprovante(self) -> bool:
+        return self.status in {
+            self.Status.AGUARDANDO_COMPROVANTE,
+            self.Status.REJEITADA,
+        }
