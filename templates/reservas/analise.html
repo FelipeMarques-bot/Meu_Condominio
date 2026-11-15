@@ -61,12 +61,13 @@
       <div class="mt-5">
         <p class="text-xs font-semibold text-muted">Comprovante</p>
         {% if reserva.comprovante %}
+          {% url 'baixar_comprovante' slug=reserva.condominio.slug pk=reserva.pk as arquivo_url %}
           {% with nome=reserva.comprovante.name|lower %}
             {% if ".pdf" in nome %}
-              <a href="{{ reserva.comprovante.url }}" target="_blank" rel="noopener" class="btn btn-ghost mt-2 px-4 py-2 text-xs">Abrir PDF do comprovante</a>
+              <a href="{{ arquivo_url }}" target="_blank" rel="noopener" class="btn btn-ghost mt-2 px-4 py-2 text-xs">Abrir PDF do comprovante</a>
             {% else %}
-              <a href="{{ reserva.comprovante.url }}" target="_blank" rel="noopener" class="mt-2 block overflow-hidden rounded-2xl border border-line bg-white">
-                <img src="{{ reserva.comprovante.url }}" alt="Comprovante da reserva de {{ reserva.unidade.rotulo }}" class="max-h-[28rem] w-full object-contain">
+              <a href="{{ arquivo_url }}" target="_blank" rel="noopener" class="mt-2 block overflow-hidden rounded-2xl border border-line bg-white">
+                <img src="{{ arquivo_url }}" alt="Comprovante da reserva de {{ reserva.unidade.rotulo }}" class="max-h-[28rem] w-full object-contain">
               </a>
             {% endif %}
           {% endwith %}

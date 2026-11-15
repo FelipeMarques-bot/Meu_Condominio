@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Criar condomínio · {{ site_nome }}{% endblock %}
+{% block description %}Coloque seu condomínio no ar em poucos minutos, com 14 dias de teste.{% endblock %}
+
+{% block body %}
+<main id="conteudo" class="mx-auto w-full max-w-5xl px-5 pb-16 pt-8 sm:px-8">
+  <a href="{% url 'landing' %}" class="flex w-fit items-center gap-3" aria-label="{{ site_nome }}, início">
+    <span class="grid h-10 w-10 place-items-center rounded-2xl bg-lagoon font-display text-xl text-paper">m</span>
+    <span class="leading-tight">
+      <span class="block text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-muted">{{ site_nome }}</span>
+      <span class="block font-display text-lg">Gestão de espaços</span>
+    </span>
+  </a>
+
+  <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_26rem] lg:items-start">
+    <section class="hidden lg:block">
+      <p class="eyebrow">Novo condomínio</p>
+      <h1 class="mt-2 font-display text-4xl font-light tracking-[-0.02em]">
+        Seu condomínio no ar em poucos minutos
+      </h1>
+      <p class="mt-4 max-w-md text-sm leading-relaxed text-muted">
+        Você cria a conta de síndico, a primeira unidade e o espaço já sai funcionando.
+        Depois é só cadastrar os locais, convidar os moradores e publicar a agenda.
+      </p>
+
+      <ul class="mt-8 space-y-4 text-sm">
+        <li class="flex gap-3">
+          <span class="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-lagoon/10 text-lagoon">1</span>
+          <span><strong class="font-semibold">14 dias de teste</strong> com todas as funções, sem cartão.</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-lagoon/10 text-lagoon">2</span>
+          <span><strong class="font-semibold">Pix direto na chave do condomínio</strong>, com QR e copia e cola.</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-lagoon/10 text-lagoon">3</span>
+          <span><strong class="font-semibold">Síndico aprova</strong> e o morador recebe o código de check-in.</span>
+        </li>
+      </ul>
+    </section>
+
+    <div class="card p-6">
+      <p class="eyebrow lg:hidden">Novo condomínio</p>
+      <h2 class="mt-2 font-display text-2xl font-light tracking-[-0.02em] lg:mt-0">
+        Criar meu condomínio
+      </h2>
+      <p class="mt-2 text-sm leading-relaxed text-muted">
+        Você entra como síndico da primeira unidade e pode convidar o restante depois.
+      </p>
+
+      <form method="post" class="mt-5 space-y-4">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-ink">
+            {{ form.non_field_errors|join:" " }}
+          </div>
+        {% endif %}
+
+        {% for campo in form %}
+          <div>
+            <label for="{{ campo.id_for_label }}" class="text-xs font-semibold text-muted">{{ campo.label }}</label>
+            <div class="mt-1">{{ campo }}</div>
+            {% if campo.help_text %}<p class="mt-1 text-[0.7rem] text-muted">{{ campo.help_text }}</p>{% endif %}
+            {% for erro in campo.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
+          </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary w-full">Começar teste de 14 dias</button>
+      </form>
+
+      <p class="mt-4 text-center text-xs text-muted">
+        Já tem conta?
+        <a href="{% url 'login' %}" class="font-semibold text-lagoon hover:underline">Entrar</a>
+      </p>
+    </div>
+  </div>
+</main>
+{% endblock %}

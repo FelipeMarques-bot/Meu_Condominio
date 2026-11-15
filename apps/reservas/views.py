@@ -1,13 +1,14 @@
 import secrets
 from calendar import Calendar
 from datetime import date, datetime, time, timedelta
+from pathlib import Path
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Q
-from django.http import Http404
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.formats import date_format
@@ -297,6 +298,20 @@ def enviar_comprovante(request, slug, pk):
         f"{configuracao.prazo_analise_horas} horas para analisar.",
     )
     return redirect("reserva_detalhe", slug=slug, pk=reserva.pk)
+
+
+@login_required
+def baixar_comprovante(request, slug, pk):
+    reserva = _reserva_para_usuario(request, pk)
+    if not reserva.comprovante:
+        raise Http404("Esta reserva ainda não tem comprovante.")
+
+    arquivo = reserva.comprovante.open("rb")
+    return FileResponse(
+        arquivo,
+        as_attachment=False,
+        filename=Path(reserva.comprovante.name).name,
+    )
 
 
 @login_required

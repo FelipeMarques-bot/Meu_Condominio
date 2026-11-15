@@ -6,6 +6,7 @@ from .forms import EntrarForm
 
 urlpatterns = [
     path("", views.landing, name="landing"),
+    path("criar/", views.criar_condominio, name="criar_condominio"),
     path(
         "entrar/",
         auth_views.LoginView.as_view(

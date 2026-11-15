@@ -74,7 +74,7 @@
       {% if reserva.comprovante %}
         <div class="mt-5 rounded-2xl border border-line bg-paper/60 p-4 text-sm">
           <p class="font-semibold">Comprovante enviado</p>
-          <a href="{{ reserva.comprovante.url }}" target="_blank" rel="noopener" class="mt-1 inline-flex text-lagoon hover:underline">Abrir arquivo</a>
+          <a href="{% url 'baixar_comprovante' slug=condominio.slug pk=reserva.pk %}" target="_blank" rel="noopener" class="mt-1 inline-flex text-lagoon hover:underline">Abrir arquivo</a>
           {% if reserva.comprovante_enviado_em %}
             <p class="mt-1 text-xs text-muted">Enviado em {{ reserva.comprovante_enviado_em|date:"d/m/Y H:i" }}</p>
           {% endif %}

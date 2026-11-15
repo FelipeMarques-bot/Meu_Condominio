@@ -1,3 +1,4 @@
+from datetime import timedelta
 from functools import wraps
 
 from django.contrib import messages
@@ -12,7 +13,7 @@ from django.utils.text import slugify
 
 from apps.reservas.models import Local
 from apps.usuarios.forms import CadastroConviteForm, ConviteForm
-from apps.usuarios.models import Convite, Usuario, VinculoUnidade
+from apps.usuarios.models import Convite, Unidade, Usuario, VinculoUnidade
 
 from .forms import (
     ConfiguracaoForm,
@@ -20,6 +21,7 @@ from .forms import (
     IdentidadeForm,
     LocalForm,
     NovoCondominioForm,
+    OnboardingForm,
     UnidadeForm,
 )
 from .models import Condominio
@@ -48,6 +50,65 @@ def _slug_unico(condominio, nome: str, ignorar=None) -> str:
 
 def landing(request):
     return render(request, "core/landing.html")
+
+
+def _slug_condominio(nome: str) -> str:
+    base = slugify(nome) or "condominio"
+    slug = base
+    numero = 2
+    while Condominio.objects.filter(slug=slug).exists():
+        slug = f"{base}-{numero}"
+        numero += 1
+    return slug
+
+
+def criar_condominio(request):
+    """Onboarding self-service: condomínio, primeira unidade e conta de síndico."""
+    if request.user.is_authenticated:
+        vinculo = (
+            request.user.vinculos.filter(ativo=True)
+            .select_related("unidade__condominio")
+            .first()
+        )
+        if vinculo is not None:
+            return redirect("gestao", slug=vinculo.unidade.condominio.slug)
+        return redirect("landing")
+
+    form = OnboardingForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        dados = form.cleaned_data
+        with transaction.atomic():
+            condominio = Condominio.objects.create(
+                nome=dados["condominio"],
+                slug=dados["slug"] or _slug_condominio(dados["condominio"]),
+                trial_ate=timezone.now() + timedelta(days=14),
+            )
+            unidade = Unidade.objects.create(
+                condominio=condominio,
+                bloco=dados["bloco"],
+                numero=dados["numero"],
+            )
+            usuario = Usuario.objects.create_user(
+                username=dados["username"],
+                email=dados["email"],
+                password=dados["senha"],
+                first_name=dados["nome"],
+                telefone=dados["telefone"],
+            )
+            VinculoUnidade.objects.create(
+                usuario=usuario,
+                unidade=unidade,
+                papel=VinculoUnidade.Papel.SINDICO,
+            )
+        login(request, usuario)
+        messages.success(
+            request,
+            f"{condominio.nome} está no ar! Você tem 14 dias de teste e já entra "
+            "como síndico.",
+        )
+        return redirect("gestao", slug=condominio.slug)
+
+    return render(request, "core/criar_condominio.html", {"form": form})
 
 
 def painel_redirect(request, slug):

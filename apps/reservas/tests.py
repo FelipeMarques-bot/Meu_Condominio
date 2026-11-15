@@ -464,3 +464,76 @@ class CalendarioTests(TestCase):
         resposta = self.client.get(self._url(), {"mes": "2026-03"})
 
         self.assertEqual(resposta.context["calendario"]["total"], 0)
+
+
+class ComprovantePrivadoTests(TestCase):
+    def setUp(self):
+        self.media = tempfile.mkdtemp()
+        self.override_media = override_settings(MEDIA_ROOT=self.media)
+        self.override_media.enable()
+        self.addCleanup(self.override_media.disable)
+
+        self.condominio, self.local, self.unidade = criar_base()
+        self.morador = criar_morador(self.unidade)
+        self.sindico = criar_sindico(self.condominio, self.unidade)
+        self.reserva = criar_reserva(
+            self.condominio,
+            self.local,
+            self.unidade,
+            self.morador,
+            status=Reserva.Status.EM_ANALISE,
+        )
+        self.reserva.comprovante = SimpleUploadedFile(
+            "comprovante.png", b"conteudo-privado", content_type="image/png"
+        )
+        self.reserva.save(update_fields=["comprovante"])
+        self.url = reverse(
+            "baixar_comprovante",
+            kwargs={"slug": self.condominio.slug, "pk": self.reserva.pk},
+        )
+
+    def test_comprovante_nao_tem_url_publica(self):
+        with self.assertRaises(ValueError):
+            url = self.reserva.comprovante.url
+            self.assertIsNone(url)
+
+    def test_arquivo_fica_fora_da_media_publica(self):
+        caminho = self.reserva.comprovante.path
+        self.assertIn("privado", caminho)
+        self.assertTrue(caminho.endswith("comprovante.png"))
+
+    def test_morador_baixa_o_proprio_comprovante(self):
+        self.client.force_login(self.morador)
+
+        resposta = self.client.get(self.url)
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(b"".join(resposta.streaming_content), b"conteudo-privado")
+
+    def test_sindico_baixa_comprovante(self):
+        self.client.force_login(self.sindico)
+
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+
+    def test_outro_morador_nao_baixa(self):
+        outra = Unidade.objects.create(
+            condominio=self.condominio, bloco="C", numero="301"
+        )
+        vizinho = criar_morador(outra, username="vizinho")
+        self.client.force_login(vizinho)
+
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+
+    def test_visitante_e_redirecionado_para_login(self):
+        resposta = self.client.get(self.url)
+
+        self.assertEqual(resposta.status_code, 302)
+        self.assertIn("/entrar/", resposta["Location"])
+
+    def test_reserva_sem_comprovante_retorna_404(self):
+        self.reserva.comprovante.delete()
+        self.reserva.comprovante = ""
+        self.reserva.save(update_fields=["comprovante"])
+        self.client.force_login(self.morador)
+
+        self.assertEqual(self.client.get(self.url).status_code, 404)

@@ -18,3 +18,4 @@ class ReservaAdmin(admin.ModelAdmin):
     search_fields = ("local__nome", "unidade__numero", "solicitante__username")
     date_hierarchy = "inicio"
     readonly_fields = ("criado_em", "atualizado_em")
+    exclude = ("comprovante",)

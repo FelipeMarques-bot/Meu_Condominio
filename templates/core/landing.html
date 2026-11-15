@@ -20,8 +20,9 @@
       <a href="#sindico" class="transition hover:text-ink">Para síndicos</a>
     </nav>
 
-    <a href="#contato" class="btn btn-ghost hidden sm:inline-flex">Falar com a gente</a>
-    <a href="#contato" class="btn btn-primary px-4 py-2 sm:hidden">Contato</a>
+    <a href="{% url 'criar_condominio' %}" class="btn btn-primary hidden sm:inline-flex">Criar condomínio</a>
+    <a href="#contato" class="btn btn-ghost hidden md:inline-flex">Falar com a gente</a>
+    <a href="{% url 'criar_condominio' %}" class="btn btn-primary px-4 py-2 sm:hidden">Criar</a>
   </div>
 </header>
 
@@ -56,13 +57,13 @@
       </p>
 
       <div class="reveal mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <a href="{% url 'agenda' slug='bela-vista' %}" class="btn btn-primary">
-          Ver demonstração
+        <a href="{% url 'criar_condominio' %}" class="btn btn-primary">
+          Criar meu condomínio
           <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true">
             <path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </a>
-        <a href="#como-funciona" class="btn btn-ghost">Entender o fluxo</a>
+        <a href="{% url 'agenda' slug='bela-vista' %}" class="btn btn-ghost">Ver demonstração</a>
       </div>
 
       <p class="reveal mt-6 text-xs leading-relaxed text-muted">
@@ -366,8 +367,8 @@
         sem planilha paralela.
       </p>
       <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-        <a href="mailto:{{ contato_email }}" class="btn bg-paper text-ink hover:bg-sand">Falar com a gente</a>
-        <a href="{% url 'agenda' slug='bela-vista' %}" class="btn border border-paper/25 text-paper hover:bg-paper/10">Abrir demonstração</a>
+        <a href="{% url 'criar_condominio' %}" class="btn bg-paper text-ink hover:bg-sand">Criar condomínio agora</a>
+        <a href="mailto:{{ contato_email }}" class="btn border border-paper/25 text-paper hover:bg-paper/10">Falar com a gente</a>
       </div>
     </div>
   </div>

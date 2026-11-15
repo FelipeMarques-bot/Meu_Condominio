@@ -45,6 +45,15 @@
                 · {{ item.total_locais }} espaço{{ item.total_locais|pluralize }}
                 · {{ item.total_reservas }} reserva{{ item.total_reservas|pluralize }}
               </p>
+              <p class="mt-1 text-[0.7rem] text-muted">
+                {% if item.em_trial %}
+                  Teste até {{ item.trial_ate|date:"d/m/Y" }} ({{ item.dias_de_trial }} dia{{ item.dias_de_trial|pluralize }} restante{{ item.dias_de_trial|pluralize }})
+                {% elif item.trial_ate %}
+                  Teste encerrado em {{ item.trial_ate|date:"d/m/Y" }}
+                {% else %}
+                  Sem prazo de teste
+                {% endif %}
+              </p>
             </div>
           </div>
           <div class="flex items-center gap-2">

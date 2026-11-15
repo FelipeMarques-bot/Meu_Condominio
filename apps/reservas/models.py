@@ -6,6 +6,7 @@ from django.db.models import F, Q
 from django.utils import timezone
 
 from apps.core.models import Condominio
+from apps.core.storage import armazenamento_privado
 from apps.core.tenancy import TenantManager
 from apps.usuarios.models import Unidade, Usuario
 
@@ -79,7 +80,11 @@ class Reserva(models.Model):
     status = models.CharField(
         max_length=30, choices=Status.choices, default=Status.AGUARDANDO_COMPROVANTE
     )
-    comprovante = models.FileField(upload_to="comprovantes/%Y/%m/", blank=True)
+    comprovante = models.FileField(
+        upload_to="comprovantes/%Y/%m/",
+        storage=armazenamento_privado,
+        blank=True,
+    )
     comprovante_enviado_em = models.DateTimeField(null=True, blank=True)
     expira_em = models.DateTimeField(null=True, blank=True)
     prazo_analise_em = models.DateTimeField(null=True, blank=True)

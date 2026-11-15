@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 
 class Condominio(models.Model):
@@ -7,6 +8,11 @@ class Condominio(models.Model):
     slug = models.SlugField(max_length=60, unique=True)
     logo = models.ImageField(upload_to="condominios/logos/", blank=True)
     ativo = models.BooleanField(default=True)
+    trial_ate = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Fim do período de teste. Em branco significa sem prazo de teste.",
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -16,6 +22,16 @@ class Condominio(models.Model):
 
     def __str__(self) -> str:
         return self.nome
+
+    @property
+    def em_trial(self) -> bool:
+        return self.trial_ate is not None and timezone.now() < self.trial_ate
+
+    @property
+    def dias_de_trial(self) -> int:
+        if not self.em_trial:
+            return 0
+        return max(0, (self.trial_ate - timezone.now()).days)
 
     @property
     def iniciais(self) -> str:

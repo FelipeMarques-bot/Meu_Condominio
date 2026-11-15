@@ -2,7 +2,7 @@
 
 SaaS multi-condomínio para reserva de espaços: agenda no celular, Pix com comprovante, análise do síndico e confirmação com check-in.
 
-**Status:** Fase 1 concluída — autenticação, convites de unidade, reserva com hold, Pix manual e painel do síndico.
+**Status:** Fase 2 em andamento — Fase 1 concluída (reservas, Pix manual, painel) e agora onboarding self-service com trial de 14 dias, painel da plataforma, gestão de locais/unidades e comprovantes em storage privado.
 
 ## O que já existe
 
@@ -14,6 +14,10 @@ SaaS multi-condomínio para reserva de espaços: agenda no celular, Pix com comp
 - Pix manual com BR Code (QR e copia e cola), envio de comprovante e prazo de análise do síndico.
 - Painel do síndico com fila de análise, confirmação com código de check-in, recusa com motivo e e-mails automáticos.
 - Painel do morador com calendário de papel (seleção de mês) e marcações manuscritas das reservas por dia.
+- Onboarding self-service em `/criar/`: condomínio novo, primeira unidade e conta de síndico, com 14 dias de teste.
+- Painel da plataforma para o dono do SaaS criar condomínios e acompanhar trial, unidades, espaços e reservas.
+- Gestão do condomínio: identidade (logo e cores), CRUD de locais com foto, unidades e convites.
+- Comprovantes em storage privado (fora da `MEDIA_URL`), servidos só por view com permissão.
 - Configuração por condomínio com prazos padrão de 48 h (antecedência) e 24 h (análise), além do interruptor do Pix automático.
 - Landing page e prévia da agenda em mobile-first, com a paleta Lagoa.
 - Tailwind 4 + Vite, fontes self-hosted, Alpine.js, HTMX, Anime.js e Three.js (carregado só em telas grandes).

@@ -13,6 +13,11 @@ urlpatterns = [
         name="enviar_comprovante",
     ),
     path(
+        "c/<slug:slug>/reservas/<int:pk>/comprovante/arquivo/",
+        views.baixar_comprovante,
+        name="baixar_comprovante",
+    ),
+    path(
         "c/<slug:slug>/reservas/<int:pk>/cancelar/",
         views.cancelar_reserva,
         name="cancelar_reserva",

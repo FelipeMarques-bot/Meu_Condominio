@@ -1,7 +1,9 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
+from django.utils.text import slugify
 
 from apps.reservas.models import Local
+from apps.usuarios.forms import CadastroConviteForm
 from apps.usuarios.models import Unidade
 
 from .models import Condominio, ConfiguracaoCondominio
@@ -166,3 +168,67 @@ class NovoCondominioForm(forms.ModelForm):
             "slug": forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "jardim"}),
         }
         help_texts = {"slug": "Endereço curto, por exemplo bela-vista."}
+
+
+class OnboardingForm(CadastroConviteForm):
+    """Cadastro público: cria o condomínio, a primeira unidade e a conta do síndico."""
+
+    condominio = forms.CharField(
+        label="Nome do condomínio",
+        max_length=120,
+        widget=forms.TextInput(
+            attrs={**CAMPO_TEXTO, "placeholder": "Condomínio Jardim das Flores"}
+        ),
+    )
+    slug = forms.SlugField(
+        label="Endereço do condomínio",
+        max_length=60,
+        required=False,
+        help_text="Vira /c/endereco/. Em branco, criamos a partir do nome.",
+        widget=forms.TextInput(
+            attrs={**CAMPO_TEXTO, "placeholder": "jardim-das-flores"}
+        ),
+    )
+    bloco = forms.CharField(
+        label="Bloco (opcional)",
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "A"}),
+    )
+    numero = forms.CharField(
+        label="Sua unidade",
+        max_length=20,
+        widget=forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "101"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["nome"].label = "Seu nome"
+        self.fields["senha"].help_text = "Use ao menos 8 caracteres."
+        self.order_fields(
+            [
+                "condominio",
+                "slug",
+                "nome",
+                "username",
+                "email",
+                "telefone",
+                "bloco",
+                "numero",
+                "senha",
+                "confirmar_senha",
+            ]
+        )
+
+    def clean_slug(self):
+        slug = self.cleaned_data.get("slug") or ""
+        slug = slugify(slug)
+        if slug and Condominio.objects.filter(slug=slug).exists():
+            raise forms.ValidationError("Este endereço já está em uso. Escolha outro.")
+        return slug
+
+    def clean_numero(self):
+        numero = (self.cleaned_data.get("numero") or "").strip()
+        if not numero:
+            raise forms.ValidationError("Informe o número da sua unidade.")
+        return numero
