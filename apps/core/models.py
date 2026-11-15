@@ -1,6 +1,14 @@
+import secrets
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+
+from .segredos import criptografar, descriptografar
+
+
+def novo_segredo_webhook() -> str:
+    return secrets.token_hex(32)
 
 
 class Condominio(models.Model):
@@ -76,6 +84,13 @@ class ConfiguracaoCondominio(models.Model):
     pix_gateway = models.CharField(max_length=20, choices=GatewayPix.choices, blank=True)
     pix_dinamico_ativo = models.BooleanField(default=False)
     auto_confirmar_ocr = models.BooleanField(default=False)
+    pix_gateway_api_key_cripto = models.TextField(blank=True, editable=False)
+    pix_gateway_webhook_secret = models.CharField(
+        max_length=64,
+        default=novo_segredo_webhook,
+        editable=False,
+        help_text="Segredo enviado pela AbacatePay em cada webhook deste condomínio.",
+    )
 
     pix_chave = models.CharField(max_length=140, blank=True)
     pix_beneficiario = models.CharField(max_length=25, blank=True)
@@ -99,6 +114,22 @@ class ConfiguracaoCondominio(models.Model):
 
     def __str__(self) -> str:
         return f"Configuração de {self.condominio.nome}"
+
+    @property
+    def pix_gateway_api_key(self) -> str:
+        return descriptografar(self.pix_gateway_api_key_cripto)
+
+    @pix_gateway_api_key.setter
+    def pix_gateway_api_key(self, valor: str) -> None:
+        self.pix_gateway_api_key_cripto = criptografar((valor or "").strip())
+
+    @property
+    def pix_automatico_pronto(self) -> bool:
+        return bool(
+            self.pix_dinamico_ativo
+            and self.pix_gateway == self.GatewayPix.ABACATEPAY
+            and self.pix_gateway_api_key
+        )
 
     def clean(self) -> None:
         if self.pix_dinamico_ativo and not self.pix_gateway:

@@ -96,6 +96,23 @@
           <div class="mt-1">{{ form.pix_gateway }}</div>
           {% for erro in form.pix_gateway.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
         </div>
+        <div class="sm:col-span-2">
+          <label for="{{ form.pix_api_key.id_for_label }}" class="text-xs font-semibold text-muted">{{ form.pix_api_key.label }}</label>
+          <div class="mt-1">{{ form.pix_api_key }}</div>
+          <p class="mt-1 text-xs text-muted">{{ form.pix_api_key.help_text }}</p>
+          {% if configuracao.pix_gateway_api_key %}
+            <p class="mt-1 text-xs font-semibold text-lagoon">Chave já configurada. Deixe em branco para manter.</p>
+          {% endif %}
+          {% for erro in form.pix_api_key.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
+        </div>
+        <div class="sm:col-span-2 rounded-2xl border border-line bg-paper/60 p-4">
+          <p class="text-xs font-semibold text-ink">Webhook da AbacatePay</p>
+          <p class="mt-1 text-xs leading-relaxed text-muted">
+            No painel da AbacatePay, cadastre este endereço em Webhooks. Ele já carrega o segredo deste condomínio.
+          </p>
+          <textarea readonly rows="2" class="field mt-2 font-mono text-[0.68rem] leading-relaxed" aria-label="URL do webhook">{{ webhook_url }}</textarea>
+          <p class="mt-2 text-xs text-muted">Eventos necessários: <span class="font-semibold text-ink">transparent.completed</span>.</p>
+        </div>
         <label class="flex items-start gap-3 text-sm">
           {{ form.auto_confirmar_ocr }}
           <span>

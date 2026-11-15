@@ -1,4 +1,3 @@
-import secrets
 from calendar import Calendar
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
@@ -24,12 +23,13 @@ from apps.core.permissoes import (
     sindico_required,
     unidades_do_usuario,
 )
+from apps.pagamentos import abacatepay
 from apps.pagamentos.brcode import gerar_payload, gerar_qr_data_uri
 
+from .codigos import gerar_codigo_checkin
 from .forms import ComprovanteForm, ReservaForm
 from .models import Local, Reserva
 
-ALFABETO_CHECKIN = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 HOLD_HORAS = 2
 
 
@@ -43,6 +43,38 @@ def _condominio(request):
 def _configuracao(condominio):
     configuracao, _ = ConfiguracaoCondominio.objects.get_or_create(condominio=condominio)
     return configuracao
+
+
+def _garantir_cobranca_pix(condominio, configuracao, reserva) -> bool:
+    if reserva.pix_brcode and not reserva.pix_vencido:
+        return True
+
+    try:
+        cobranca = abacatepay.criar_cobranca_pix(
+            api_key=configuracao.pix_gateway_api_key,
+            valor_centavos=int((reserva.valor * 100).to_integral_value()),
+            descricao=f"{condominio.nome} · {reserva.local.nome}",
+            external_id=str(reserva.pk),
+        )
+    except abacatepay.ErroAbacatePay:
+        return False
+
+    reserva.pix_cobranca_id = cobranca["id"]
+    reserva.pix_brcode = cobranca["brcode"]
+    reserva.pix_qr_data_uri = cobranca["brcode_base64"] or gerar_qr_data_uri(
+        cobranca["brcode"]
+    )
+    reserva.pix_expira_em = cobranca["expira_em"]
+    reserva.save(
+        update_fields=[
+            "pix_cobranca_id",
+            "pix_brcode",
+            "pix_qr_data_uri",
+            "pix_expira_em",
+            "atualizado_em",
+        ]
+    )
+    return True
 
 
 def _reserva_para_usuario(request, pk):
@@ -215,7 +247,17 @@ def pagamento(request, slug, pk):
     payload = None
     qr_data_uri = None
     erro_pix = None
-    if configuracao.pix_chave:
+    pix_dinamico = False
+    if configuracao.pix_automatico_pronto and reserva.status in {
+        Reserva.Status.AGUARDANDO_COMPROVANTE,
+        Reserva.Status.EM_ANALISE,
+    }:
+        pix_dinamico = _garantir_cobranca_pix(condominio, configuracao, reserva)
+        if pix_dinamico:
+            payload = reserva.pix_brcode
+            qr_data_uri = reserva.pix_qr_data_uri
+
+    if not pix_dinamico and configuracao.pix_chave:
         try:
             payload = gerar_payload(
                 configuracao.pix_chave,
@@ -226,6 +268,11 @@ def pagamento(request, slug, pk):
             qr_data_uri = gerar_qr_data_uri(payload)
         except ValueError:
             erro_pix = "O Pix do condomínio ainda não está configurado."
+    elif not pix_dinamico:
+        erro_pix = (
+            "Não foi possível gerar o Pix automático agora. "
+            "Pague pela chave do condomínio e envie o comprovante."
+        )
 
     return render(
         request,
@@ -238,6 +285,7 @@ def pagamento(request, slug, pk):
             "payload": payload,
             "qr_data_uri": qr_data_uri,
             "erro_pix": erro_pix,
+            "pix_dinamico": pix_dinamico,
         },
     )
 
@@ -383,16 +431,6 @@ def analise_reserva(request, slug, pk):
     )
 
 
-def _gerar_codigo_checkin(condominio) -> str:
-    for _ in range(20):
-        codigo = "".join(secrets.choice(ALFABETO_CHECKIN) for _ in range(6))
-        if not Reserva.all_objects.filter(
-            condominio=condominio, codigo_checkin=codigo
-        ).exists():
-            return codigo
-    return secrets.token_hex(3).upper()
-
-
 @login_required
 @sindico_required
 def confirmar_reserva(request, slug, pk):
@@ -422,7 +460,7 @@ def confirmar_reserva(request, slug, pk):
     with transaction.atomic():
         reserva.status = Reserva.Status.CONFIRMADA
         reserva.confirmado_em = timezone.now()
-        reserva.codigo_checkin = _gerar_codigo_checkin(condominio)
+        reserva.codigo_checkin = gerar_codigo_checkin(condominio)
         reserva.save(
             update_fields=["status", "confirmado_em", "codigo_checkin", "atualizado_em"]
         )

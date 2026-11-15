@@ -26,6 +26,15 @@ class EntrarForm(AuthenticationForm):
 
 
 class ConfiguracaoForm(forms.ModelForm):
+    pix_api_key = forms.CharField(
+        label="Chave de API da AbacatePay",
+        required=False,
+        widget=forms.PasswordInput(
+            attrs={"class": "field", "autocomplete": "off", "placeholder": "abc_dev_..."}
+        ),
+        help_text="Cole a chave da sua conta. Ela fica criptografada e não aparece de novo.",
+    )
+
     class Meta:
         model = ConfiguracaoCondominio
         fields = [
@@ -65,6 +74,13 @@ class ConfiguracaoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["pix_gateway"].choices = [
+            ("", "---------"),
+            (
+                ConfiguracaoCondominio.GatewayPix.ABACATEPAY,
+                ConfiguracaoCondominio.GatewayPix.ABACATEPAY.label,
+            ),
+        ]
         for nome, campo in self.fields.items():
             if nome in {
                 "pix_dinamico_ativo",
@@ -75,6 +91,38 @@ class ConfiguracaoForm(forms.ModelForm):
             }:
                 continue
             campo.widget.attrs.setdefault("class", "field")
+
+    def clean(self):
+        dados = super().clean()
+        if not dados.get("pix_dinamico_ativo"):
+            return dados
+
+        gateway = dados.get("pix_gateway") or ""
+        if gateway != ConfiguracaoCondominio.GatewayPix.ABACATEPAY:
+            self.add_error(
+                "pix_gateway",
+                "Por enquanto o Pix automático está disponível apenas com a AbacatePay.",
+            )
+        chave_nova = (dados.get("pix_api_key") or "").strip()
+        chave_atual = (
+            self.instance.pix_gateway_api_key
+            if getattr(self.instance, "pk", None)
+            else ""
+        )
+        if not chave_nova and not chave_atual:
+            self.add_error(
+                "pix_api_key", "Informe a chave de API da sua conta AbacatePay."
+            )
+        return dados
+
+    def save(self, commit=True):
+        configuracao = super().save(commit=False)
+        chave = (self.cleaned_data.get("pix_api_key") or "").strip()
+        if chave:
+            configuracao.pix_gateway_api_key = chave
+        if commit:
+            configuracao.save()
+        return configuracao
 
 
 CAMPO_ARQUIVO = {

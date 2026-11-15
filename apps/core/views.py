@@ -168,10 +168,22 @@ def configuracoes(request, slug):
         messages.success(request, "Configurações atualizadas.")
         return redirect("configuracoes", slug=condominio.slug)
 
+    webhook_url = request.build_absolute_uri(
+        reverse(
+            "webhook_abacatepay",
+            args=[condominio.slug, configuracao.pix_gateway_webhook_secret],
+        )
+    )
+
     return render(
         request,
         "core/configuracoes.html",
-        {"condominio": condominio, "configuracao": configuracao, "form": form},
+        {
+            "condominio": condominio,
+            "configuracao": configuracao,
+            "form": form,
+            "webhook_url": webhook_url,
+        },
     )
 
 

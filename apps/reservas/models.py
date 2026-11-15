@@ -89,6 +89,11 @@ class Reserva(models.Model):
     expira_em = models.DateTimeField(null=True, blank=True)
     prazo_analise_em = models.DateTimeField(null=True, blank=True)
     confirmado_em = models.DateTimeField(null=True, blank=True)
+    pix_cobranca_id = models.CharField(max_length=80, blank=True, db_index=True)
+    pix_brcode = models.TextField(blank=True)
+    pix_qr_data_uri = models.TextField(blank=True)
+    pix_expira_em = models.DateTimeField(null=True, blank=True)
+    pix_pago_em = models.DateTimeField(null=True, blank=True)
     codigo_checkin = models.CharField(max_length=8, blank=True)
     motivo_rejeicao = models.TextField(blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
@@ -141,3 +146,7 @@ class Reserva(models.Model):
             self.Status.AGUARDANDO_COMPROVANTE,
             self.Status.REJEITADA,
         }
+
+    @property
+    def pix_vencido(self) -> bool:
+        return bool(self.pix_expira_em and timezone.now() > self.pix_expira_em)
