@@ -12,10 +12,13 @@
         <span class="block font-display text-base">{{ site_nome }}</span>
       </span>
     </div>
-    <form method="post" action="{% url 'plataforma_sair' %}">
-      {% csrf_token %}
-      <button type="submit" class="rounded-full px-3 py-2 text-xs font-semibold text-paper/70 transition hover:bg-paper/10 hover:text-paper">Sair</button>
-    </form>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'plataforma_armazenamento' %}" class="rounded-full px-3 py-2 text-xs font-semibold text-paper/70 transition hover:bg-paper/10 hover:text-paper">Armazenamento</a>
+      <form method="post" action="{% url 'plataforma_sair' %}">
+        {% csrf_token %}
+        <button type="submit" class="rounded-full px-3 py-2 text-xs font-semibold text-paper/70 transition hover:bg-paper/10 hover:text-paper">Sair</button>
+      </form>
+    </div>
   </div>
 </header>
 

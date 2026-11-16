@@ -358,6 +358,13 @@ class IdentidadeTests(TestCase):
         self.assertEqual(self.condominio.nome, "Bela Vista Residence")
         self.assertTrue(self.condominio.logo)
 
+    def test_pagina_tem_botao_de_upload(self):
+        resposta = self.client.get(
+            reverse("identidade", args=[self.condominio.slug])
+        )
+
+        self.assertContains(resposta, "Escolher imagem")
+
     def test_quantidade_declarada_alimenta_a_gestao(self):
         resposta = self.client.post(
             reverse("identidade", args=[self.condominio.slug]),
@@ -420,5 +427,28 @@ class PlataformaTests(TestCase):
         self.client.force_login(morador)
 
         resposta = self.client.get(reverse("plataforma"))
+
+        self.assertRedirects(resposta, reverse("plataforma_entrar"))
+
+    def test_armazenamento_mostra_backend_ativo(self):
+        self.client.force_login(self.dono)
+
+        resposta = self.client.get(reverse("plataforma_armazenamento"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "FileSystemStorage")
+
+    def test_armazenamento_sem_arquivo_mostra_erro(self):
+        self.client.force_login(self.dono)
+
+        resposta = self.client.post(reverse("plataforma_armazenamento"), {})
+
+        self.assertContains(resposta, "Escolha um arquivo")
+
+    def test_armazenamento_exige_superuser(self):
+        morador = criar_usuario("morador", self.unidade, VinculoUnidade.Papel.MORADOR)
+        self.client.force_login(morador)
+
+        resposta = self.client.get(reverse("plataforma_armazenamento"))
 
         self.assertRedirects(resposta, reverse("plataforma_entrar"))

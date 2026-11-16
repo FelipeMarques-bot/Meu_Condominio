@@ -11,6 +11,11 @@ urlpatterns = [
     path("plataforma/entrar/", views.plataforma_entrar, name="plataforma_entrar"),
     path("plataforma/", views.plataforma_painel, name="plataforma"),
     path(
+        "plataforma/armazenamento/",
+        views.plataforma_armazenamento,
+        name="plataforma_armazenamento",
+    ),
+    path(
         "plataforma/sair/",
         auth_views.LogoutView.as_view(next_page="plataforma_entrar"),
         name="plataforma_sair",

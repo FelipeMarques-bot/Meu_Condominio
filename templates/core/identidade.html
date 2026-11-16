@@ -40,7 +40,15 @@
         </div>
         <div>
           <label for="{{ form.logo.id_for_label }}" class="text-xs font-semibold text-muted">{{ form.logo.label }}</label>
-          <div class="mt-1">{{ form.logo }}</div>
+          <div class="mt-1 space-y-2">
+            <button type="button" id="botao-escolher-logo" class="btn btn-ghost">
+              Escolher imagem
+            </button>
+            <p id="nome-arquivo-logo" class="text-xs text-muted">
+              {% if condominio.logo %}Logo atual mantido se você não escolher outro.{% else %}Nenhum arquivo selecionado.{% endif %}
+            </p>
+            <div class="sr-only">{{ form.logo }}</div>
+          </div>
           <p class="mt-1 text-[0.7rem] text-muted">PNG, JPG ou WebP. Envie uma imagem quadrada para melhor resultado.</p>
           {% for erro in form.logo.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
         </div>
@@ -65,15 +73,27 @@
 <script>
   (function () {
     var entrada = document.querySelector('input[type="file"][name="logo"]');
+    var botaoEscolher = document.getElementById("botao-escolher-logo");
+    var nomeArquivo = document.getElementById("nome-arquivo-logo");
     var previa = document.getElementById("previa-logo");
     var iniciais = document.getElementById("previa-iniciais");
     var botao = document.getElementById("botao-identidade");
     var formulario = botao.closest("form");
 
+    if (botaoEscolher && entrada) {
+      botaoEscolher.addEventListener("click", function () {
+        entrada.click();
+      });
+    }
+
     if (entrada) {
       entrada.addEventListener("change", function () {
         var arquivo = entrada.files && entrada.files[0];
-        if (!arquivo) return;
+        if (!arquivo) {
+          nomeArquivo.textContent = "Nenhum arquivo selecionado.";
+          return;
+        }
+        nomeArquivo.textContent = arquivo.name;
         previa.src = URL.createObjectURL(arquivo);
         previa.classList.remove("hidden");
         iniciais.classList.add("hidden");

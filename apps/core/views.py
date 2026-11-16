@@ -1,11 +1,14 @@
 import logging
 from datetime import timedelta
 from functools import wraps
+from uuid import uuid4
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, PasswordChangeView
+from django.core.files.storage import storages
 from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -13,6 +16,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
+from apps.core.storage import armazenamento_privado
 from apps.reservas.models import Local
 from apps.usuarios.forms import CadastroConviteForm, ConviteForm
 from apps.usuarios.models import Convite, Unidade, Usuario, VinculoUnidade
@@ -555,4 +559,50 @@ def plataforma_painel(request):
         request,
         "core/plataforma.html",
         {"form": form, "condominios": condominios},
+    )
+
+
+@_plataforma_required
+def plataforma_armazenamento(request):
+    erro = None
+    enviado = None
+
+    if request.method == "POST":
+        arquivo = request.FILES.get("arquivo")
+        if arquivo is None:
+            erro = "Escolha um arquivo para testar."
+        else:
+            try:
+                publico = storages["default"]
+                nome = publico.save(f"testes/{uuid4().hex}-{arquivo.name}", arquivo)
+                enviado = publico.url(nome)
+            except Exception as exc:
+                logger.exception("Teste de armazenamento falhou")
+                erro = f"{type(exc).__name__}: {exc}"
+
+    publico = storages["default"]
+    privado = armazenamento_privado()
+
+    def resumo(storage):
+        try:
+            bucket = getattr(storage, "bucket_name", None)
+        except Exception:
+            bucket = None
+        return {
+            "backend": f"{type(storage).__module__}.{type(storage).__name__}",
+            "bucket": bucket,
+        }
+
+    return render(
+        request,
+        "core/plataforma_armazenamento.html",
+        {
+            "publico": resumo(publico),
+            "privado": resumo(privado),
+            "endpoint": getattr(settings, "AWS_S3_ENDPOINT_URL", None),
+            "dominio": getattr(settings, "AWS_S3_CUSTOM_DOMAIN", None),
+            "usando_cloudinary": bool(getattr(settings, "CLOUDINARY_CLOUD_NAME", "")),
+            "enviado": enviado,
+            "erro": erro,
+        },
     )
