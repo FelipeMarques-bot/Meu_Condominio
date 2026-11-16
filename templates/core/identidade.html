@@ -49,19 +49,43 @@
       <div class="text-center">
         <p class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">Prévia</p>
         <div class="mx-auto mt-3 grid h-24 w-24 place-items-center overflow-hidden rounded-3xl bg-sand/60">
-          {% if condominio.logo %}
-            <img src="{{ condominio.logo.url }}" alt="Logo atual do {{ condominio.nome }}" class="h-full w-full object-cover">
-          {% else %}
-            <span class="font-display text-2xl text-muted">{{ condominio.iniciais }}</span>
-          {% endif %}
+          <img id="previa-logo" src="{% if condominio.logo %}{{ condominio.logo.url }}{% endif %}" alt="Logo do {{ condominio.nome }}" class="h-full w-full object-cover {% if not condominio.logo %}hidden{% endif %}">
+          <span id="previa-iniciais" class="font-display text-2xl text-muted {% if condominio.logo %}hidden{% endif %}">{{ condominio.iniciais }}</span>
         </div>
       </div>
     </div>
 
     <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
       <a href="{% url 'gestao' slug=condominio.slug %}" class="btn btn-ghost">Cancelar</a>
-      <button type="submit" class="btn btn-primary">Salvar identidade</button>
+      <button type="submit" id="botao-identidade" class="btn btn-primary">Salvar identidade</button>
     </div>
   </form>
 </main>
+
+<script>
+  (function () {
+    var entrada = document.querySelector('input[type="file"][name="logo"]');
+    var previa = document.getElementById("previa-logo");
+    var iniciais = document.getElementById("previa-iniciais");
+    var botao = document.getElementById("botao-identidade");
+    var formulario = botao.closest("form");
+
+    if (entrada) {
+      entrada.addEventListener("change", function () {
+        var arquivo = entrada.files && entrada.files[0];
+        if (!arquivo) return;
+        previa.src = URL.createObjectURL(arquivo);
+        previa.classList.remove("hidden");
+        iniciais.classList.add("hidden");
+      });
+    }
+
+    if (formulario) {
+      formulario.addEventListener("submit", function () {
+        botao.disabled = true;
+        botao.textContent = "Enviando...";
+      });
+    }
+  })();
+</script>
 {% endblock %}

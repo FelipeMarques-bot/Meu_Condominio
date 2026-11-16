@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from functools import wraps
 
@@ -29,6 +30,8 @@ from .forms import (
 )
 from .models import Condominio, Plano
 from .permissoes import gestao_required
+
+logger = logging.getLogger(__name__)
 
 
 def _condominio(request):
@@ -273,9 +276,18 @@ def identidade(request, slug):
     )
 
     if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(request, "Identidade do condomínio atualizada.")
-        return redirect("identidade", slug=condominio.slug)
+        try:
+            form.save()
+        except Exception:
+            logger.exception("Falha ao salvar identidade do condomínio")
+            messages.error(
+                request,
+                "Não foi possível salvar a imagem. Confira o armazenamento "
+                "(R2/Cloudinary) e tente novamente.",
+            )
+        else:
+            messages.success(request, "Identidade do condomínio atualizada.")
+            return redirect("identidade", slug=condominio.slug)
 
     return render(
         request,
