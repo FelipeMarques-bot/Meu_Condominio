@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 
 
-class ArmazenamentoPrivado(FileSystemStorage):
+class ArmazenamentoPrivadoLocal(FileSystemStorage):
     """Guarda arquivos fora da MEDIA_URL: só são servidos por view com permissão."""
 
     def __init__(self):
@@ -20,4 +20,8 @@ class ArmazenamentoPrivado(FileSystemStorage):
 
 
 def armazenamento_privado():
-    return ArmazenamentoPrivado()
+    if getattr(settings, "STORAGE_S3_ATIVO", False):
+        from .storage_s3 import ArmazenamentoPrivado as ArmazenamentoPrivadoS3
+
+        return ArmazenamentoPrivadoS3()
+    return ArmazenamentoPrivadoLocal()

@@ -152,6 +152,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+STORAGE_S3_BUCKET = env("STORAGE_S3_BUCKET")
+STORAGE_S3_PRIVATE_BUCKET = env("STORAGE_S3_PRIVATE_BUCKET")
+STORAGE_S3_ATIVO = bool(STORAGE_S3_BUCKET)
+
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {
@@ -162,6 +166,19 @@ STORAGES = {
         )
     },
 }
+
+if STORAGE_S3_ATIVO:
+    AWS_ACCESS_KEY_ID = env("STORAGE_S3_ACCESS_KEY")
+    AWS_SECRET_ACCESS_KEY = env("STORAGE_S3_SECRET_KEY")
+    AWS_STORAGE_BUCKET_NAME = STORAGE_S3_BUCKET
+    AWS_S3_ENDPOINT_URL = env("STORAGE_S3_ENDPOINT") or None
+    AWS_S3_REGION_NAME = env("STORAGE_S3_REGION", "auto")
+    AWS_S3_CUSTOM_DOMAIN = env("STORAGE_S3_PUBLIC_DOMAIN") or None
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = False
+    AWS_S3_SIGNATURE_VERSION = "s3v4"
+    STORAGES["default"] = {"BACKEND": "apps.core.storage_s3.ArmazenamentoPublico"}
 
 WHITENOISE_MAX_AGE = 0 if DEBUG else 31536000
 

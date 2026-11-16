@@ -172,6 +172,29 @@ docker build -t meu-condominio .
 docker run --rm -p 8000:8000 --env-file .env meu-condominio
 ```
 
+## Mídia persistente (Cloudflare R2)
+
+No Render free o disco é efêmero: logos, fotos de espaços e comprovantes somem a cada deploy. O app já suporta qualquer storage S3 (R2 incluso):
+
+1. No Cloudflare, abra **R2** e crie dois buckets: `meu-condominio-media` (leitura pública) e `meu-condominio-privado` (sem acesso público).
+2. No bucket público, ative **Public access** (r2.dev) ou conecte um domínio próprio e copie o endereço `pub-xxxx.r2.dev`.
+3. Em **Manage R2 API Tokens**, crie um token com **Object Read & Write** nos dois buckets e guarde o Access Key ID e o Secret Access Key.
+4. No Render, adicione as variáveis e faça redeploy:
+
+| Variável | Exemplo |
+|---|---|
+| `STORAGE_S3_BUCKET` | `meu-condominio-media` |
+| `STORAGE_S3_PRIVATE_BUCKET` | `meu-condominio-privado` |
+| `STORAGE_S3_ACCESS_KEY` | token do R2 |
+| `STORAGE_S3_SECRET_KEY` | secret do token |
+| `STORAGE_S3_ENDPOINT` | `https://<account_id>.r2.cloudflarestorage.com` |
+| `STORAGE_S3_REGION` | `auto` |
+| `STORAGE_S3_PUBLIC_DOMAIN` | `pub-xxxx.r2.dev` |
+
+Com isso, logos e fotos usam o bucket público (`media/`), e comprovantes vão para o bucket privado (`privado/`) com URL assinada. Sem essas variáveis, tudo continua no disco local.
+
+**Cloudinary (alternativa):** funciona bem para logos e fotos, mas não para comprovantes privados. Crie a conta, instale `cloudinary` + `django-cloudinary-storage`, configure `CLOUDINARY_STORAGE` com `cloud_name`/`api_key`/`api_secret` e troque o backend `default` para `cloudinary_storage.storage.MediaCloudinaryStorage`. Mantenha os comprovantes no R2 (ou no disco). Confirme a compatibilidade do pacote com Django 5.2 antes de usar em produção.
+
 ## Planos
 
 | Plano | Preço/mês | Unidades | Espaços |
