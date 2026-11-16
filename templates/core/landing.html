@@ -4,7 +4,12 @@
 {% block description %}Agenda de salão, quiosque e churrasqueira com Pix, análise do síndico e confirmação no celular.{% endblock %}
 
 {% block body %}
-<header class="relative z-30">
+<header
+  class="relative z-40"
+  x-data="{ menu: false }"
+  x-effect="document.documentElement.classList.toggle('nav-aberto', menu)"
+  @keydown.escape.window="menu = false"
+>
   <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-5 py-5 sm:px-8 lg:py-7">
     <a href="{% url 'landing' %}" class="flex items-center gap-3" aria-label="Meu Condomínio, início">
       <span class="grid h-10 w-10 place-items-center rounded-2xl bg-lagoon font-display text-xl text-paper">m</span>
@@ -20,9 +25,94 @@
       <a href="#sindico" class="transition hover:text-ink">Para síndicos</a>
     </nav>
 
-    <a href="{% url 'criar_condominio' %}" class="btn btn-primary hidden sm:inline-flex">Criar condomínio</a>
+    <a href="{% url 'criar_condominio' %}" class="btn btn-primary hidden md:inline-flex">Criar condomínio</a>
     <a href="#contato" class="btn btn-ghost hidden md:inline-flex">Falar com a gente</a>
-    <a href="{% url 'criar_condominio' %}" class="btn btn-primary px-4 py-2 sm:hidden">Criar</a>
+
+    <button
+      type="button"
+      class="grid h-11 w-11 place-items-center rounded-full border border-line bg-white/70 text-ink backdrop-blur transition active:scale-95 md:hidden"
+      @click="menu = true; $nextTick(() => $refs.fecharMenu?.focus())"
+      :aria-expanded="menu"
+      aria-controls="menu-mobile"
+      aria-label="Abrir menu"
+    >
+      <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+        <path d="M4 8h16M4 16h16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div id="menu-mobile" x-cloak x-show="menu" class="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+    <div
+      class="absolute inset-0 bg-linear-to-b from-paper via-paper to-paper"
+      x-show="menu"
+      x-transition.opacity.duration.200ms
+      @click="menu = false"
+    ></div>
+
+    <div
+      class="relative flex h-dvh flex-col px-6 pt-5"
+      style="padding-bottom: calc(1.75rem + env(safe-area-inset-bottom))"
+      x-show="menu"
+      x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="opacity-0 translate-y-3"
+      x-transition:enter-end="opacity-100 translate-y-0"
+      x-transition:leave="transition ease-in duration-150"
+      x-transition:leave-start="opacity-100"
+      x-transition:leave-end="opacity-0"
+    >
+      <div class="flex items-center justify-between">
+        <span class="flex items-center gap-3">
+          <span class="grid h-10 w-10 place-items-center rounded-2xl bg-lagoon font-display text-xl text-paper">m</span>
+          <span class="leading-tight">
+            <span class="block text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-muted">Meu Condomínio</span>
+            <span class="block font-display text-lg">Gestão de espaços</span>
+          </span>
+        </span>
+        <button
+          type="button"
+          x-ref="fecharMenu"
+          class="grid h-11 w-11 place-items-center rounded-full border border-line bg-white/80 text-ink transition active:scale-95"
+          @click="menu = false"
+          aria-label="Fechar menu"
+        >
+          <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true">
+            <path d="m5 5 10 10M15 5 5 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <nav class="mt-10 flex flex-col font-display text-3xl font-light tracking-tight" aria-label="Menu principal">
+        <a href="#produto" @click="menu = false" class="group flex items-center justify-between border-b border-line/80 py-4 transition active:text-lagoon">
+          Produto
+          <span class="text-[0.7rem] font-sans font-semibold text-muted">01</span>
+        </a>
+        <a href="#como-funciona" @click="menu = false" class="group flex items-center justify-between border-b border-line/80 py-4 transition active:text-lagoon">
+          Como funciona
+          <span class="text-[0.7rem] font-sans font-semibold text-muted">02</span>
+        </a>
+        <a href="#sindico" @click="menu = false" class="group flex items-center justify-between border-b border-line/80 py-4 transition active:text-lagoon">
+          Para síndicos
+          <span class="text-[0.7rem] font-sans font-semibold text-muted">03</span>
+        </a>
+        <a href="#planos" @click="menu = false" class="group flex items-center justify-between border-b border-line/80 py-4 transition active:text-lagoon">
+          Planos
+          <span class="text-[0.7rem] font-sans font-semibold text-muted">04</span>
+        </a>
+      </nav>
+
+      <div class="mt-auto space-y-3 pt-8">
+        <a href="{% url 'criar_condominio' %}" @click="menu = false" class="btn btn-primary w-full justify-center py-4 text-base">
+          Criar meu condomínio
+        </a>
+        <a href="{% url 'login' %}" @click="menu = false" class="btn btn-ghost w-full justify-center py-3.5">
+          Entrar
+        </a>
+        <a href="#contato" @click="menu = false" class="block pt-3 text-center text-xs font-semibold text-muted underline decoration-line underline-offset-4 transition active:text-ink">
+          Falar com a gente
+        </a>
+      </div>
+    </div>
   </div>
 </header>
 

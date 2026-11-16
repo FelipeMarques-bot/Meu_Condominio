@@ -12,7 +12,7 @@
       </span>
     </a>
 
-    <nav class="flex items-center gap-1 text-xs font-semibold text-muted" aria-label="Navegação da conta">
+    <nav class="hidden items-center gap-1 text-xs font-semibold text-muted lg:flex" aria-label="Navegação da conta">
       <a href="{% url 'minhas_reservas' slug=condominio.slug %}"
          class="rounded-full px-3 py-2 transition {% if ativo == 'reservas' %}bg-lagoon/10 text-lagoon{% else %}hover:bg-white/70 hover:text-ink{% endif %}">
         Reservas
@@ -40,3 +40,5 @@
     </nav>
   </div>
 </header>
+
+{% include "partials/nav_inferior.html" %}

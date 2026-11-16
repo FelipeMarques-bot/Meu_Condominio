@@ -1,0 +1,177 @@
+{% with rota=request.resolver_match.url_name %}
+<nav
+  data-nav-inferior
+  x-data="{ mais: false }"
+  x-effect="document.documentElement.classList.toggle('nav-aberto', mais)"
+  class="fixed inset-x-0 bottom-0 z-40 border-t border-line/80 bg-paper/92 backdrop-blur-xl lg:hidden"
+  style="padding-bottom: env(safe-area-inset-bottom)"
+  aria-label="Navegação principal"
+>
+  <div class="mx-auto grid max-w-md grid-cols-4 gap-1 px-2 py-1.5">
+    <a href="{% url 'landing' %}" class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold text-muted transition active:bg-lagoon/5">
+      <span class="grid h-6 w-6 place-items-center transition group-hover:text-ink">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <path d="M4 11.5 12 5l8 6.5V20h-5v-5H9v5H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      Início
+    </a>
+
+    <a
+      href="{% url 'agenda' slug=condominio.slug %}"
+      {% if rota == 'agenda' %}aria-current="page"{% endif %}
+      class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold transition active:bg-lagoon/5 {% if rota == 'agenda' %}text-lagoon{% else %}text-muted{% endif %}"
+    >
+      <span class="grid h-6 w-6 place-items-center rounded-lg transition {% if rota == 'agenda' %}bg-lagoon/10{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <rect x="4" y="5" width="16" height="15" rx="2.5" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </span>
+      Agenda
+    </a>
+
+    {% if rota == 'minhas_reservas' or rota == 'reserva_detalhe' or rota == 'reservar' or rota == 'pagamento' %}
+    <a
+      href="{% url 'minhas_reservas' slug=condominio.slug %}"
+      aria-current="page"
+      class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold text-lagoon transition active:bg-lagoon/5"
+    >
+      <span class="grid h-6 w-6 place-items-center rounded-lg bg-lagoon/10 transition">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <path d="M5 7h14v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M9 7V5h6v2M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </span>
+      Reservas
+    </a>
+    {% else %}
+    <a
+      href="{% url 'minhas_reservas' slug=condominio.slug %}"
+      class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold text-muted transition active:bg-lagoon/5"
+    >
+      <span class="grid h-6 w-6 place-items-center rounded-lg transition group-hover:text-ink">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <path d="M5 7h14v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M9 7V5h6v2M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </span>
+      Reservas
+    </a>
+    {% endif %}
+
+    <button
+      type="button"
+      class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold text-muted transition active:bg-lagoon/5"
+      :class="mais && 'text-lagoon'"
+      @click="mais = true"
+      :aria-expanded="mais"
+      aria-controls="nav-mais"
+    >
+      <span class="grid h-6 w-6 place-items-center rounded-lg transition" :class="mais && 'bg-lagoon/10'">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <circle cx="6" cy="12" r="1.6" fill="currentColor"/>
+          <circle cx="12" cy="12" r="1.6" fill="currentColor"/>
+          <circle cx="18" cy="12" r="1.6" fill="currentColor"/>
+        </svg>
+      </span>
+      Mais
+    </button>
+  </div>
+
+  <div x-cloak x-show="mais" class="fixed inset-0 z-50 lg:hidden" @keydown.escape.window="mais = false">
+    <div
+      class="absolute inset-0 bg-ink/35 backdrop-blur-sm"
+      x-show="mais"
+      x-transition.opacity.duration.200ms
+      @click="mais = false"
+    ></div>
+
+    <div
+      id="nav-mais"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Mais opções"
+      class="absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-y-auto rounded-t-3xl border-t border-line bg-paper px-5 pt-4 shadow-[0_-20px_60px_-40px_rgba(12,27,31,0.6)]"
+      style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom))"
+      x-show="mais"
+      x-transition:enter="transition ease-out duration-250"
+      x-transition:enter-start="translate-y-full opacity-0"
+      x-transition:enter-end="translate-y-0 opacity-100"
+      x-transition:leave="transition ease-in duration-200"
+      x-transition:leave-start="translate-y-0 opacity-100"
+      x-transition:leave-end="translate-y-full opacity-0"
+    >
+      <div class="mx-auto mb-4 h-1.5 w-10 rounded-full bg-line"></div>
+
+      <p class="eyebrow">Mais</p>
+
+      <div class="mt-3 grid gap-1">
+        {% if pode_aprovar %}
+          <a href="{% url 'painel' slug=condominio.slug %}" class="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-ink transition hover:bg-white/70">
+            Painel de análise
+            <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4 text-muted" aria-hidden="true">
+              <path d="m7 4 6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+        {% endif %}
+        {% if pode_gerir %}
+          <a href="{% url 'gestao' slug=condominio.slug %}" class="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-ink transition hover:bg-white/70">
+            Gestão
+            <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4 text-muted" aria-hidden="true">
+              <path d="m7 4 6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a href="{% url 'locais' slug=condominio.slug %}" class="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-ink transition hover:bg-white/70">
+            Locais
+            <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4 text-muted" aria-hidden="true">
+              <path d="m7 4 6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a href="{% url 'unidades' slug=condominio.slug %}" class="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-ink transition hover:bg-white/70">
+            Unidades
+            <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4 text-muted" aria-hidden="true">
+              <path d="m7 4 6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a href="{% url 'convites' slug=condominio.slug %}" class="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-ink transition hover:bg-white/70">
+            Convites
+            <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4 text-muted" aria-hidden="true">
+              <path d="m7 4 6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a href="{% url 'configuracoes' slug=condominio.slug %}" class="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-ink transition hover:bg-white/70">
+            Configurações
+            <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4 text-muted" aria-hidden="true">
+              <path d="m7 4 6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a href="{% url 'identidade' slug=condominio.slug %}" class="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-ink transition hover:bg-white/70">
+            Identidade
+            <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4 text-muted" aria-hidden="true">
+              <path d="m7 4 6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+        {% endif %}
+        <a href="{% url 'landing' %}" class="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-ink transition hover:bg-white/70">
+          Início do site
+          <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4 text-muted" aria-hidden="true">
+            <path d="m7 4 6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+
+      <div class="mt-4 border-t border-line pt-4">
+        {% if user.is_authenticated %}
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-ghost w-full justify-center">Sair da conta</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}" class="btn btn-primary w-full justify-center">Entrar</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>
+{% endwith %}

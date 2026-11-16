@@ -5,18 +5,18 @@
       <h2 class="mt-1 font-hand text-3xl leading-none text-lagoon sm:text-4xl">{{ calendario.titulo }}</h2>
     </div>
 
-    <div class="flex items-center gap-2">
-      <a href="?mes={{ calendario.anterior }}" class="grid h-9 w-9 place-items-center rounded-full border border-line bg-white/70 text-muted transition hover:border-lagoon/40 hover:text-ink" aria-label="Mês anterior">
+    <div class="flex flex-1 items-center justify-end gap-2 sm:flex-none">
+      <a href="?mes={{ calendario.anterior }}" class="grid h-11 w-11 place-items-center sm:h-9 sm:w-9 rounded-full border border-line bg-white/70 text-muted transition hover:border-lagoon/40 hover:text-ink" aria-label="Mês anterior">
         <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true"><path d="M12 5 7 10l5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
-      <form method="get" class="flex items-center gap-2">
+      <form method="get" class="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
         <label for="mes" class="sr-only">Escolher mês</label>
         <input id="mes" name="mes" type="month" value="{{ calendario.valor }}"
-               class="field w-[9.6rem] px-3 py-2 text-xs"
+               class="field w-full min-w-0 px-3 py-2 text-xs sm:w-[9.6rem]"
                onchange="this.form.submit()">
         <noscript><button type="submit" class="btn btn-ghost px-3 py-2 text-xs">Ver</button></noscript>
       </form>
-      <a href="?mes={{ calendario.proximo }}" class="grid h-9 w-9 place-items-center rounded-full border border-line bg-white/70 text-muted transition hover:border-lagoon/40 hover:text-ink" aria-label="Próximo mês">
+      <a href="?mes={{ calendario.proximo }}" class="grid h-11 w-11 place-items-center sm:h-9 sm:w-9 rounded-full border border-line bg-white/70 text-muted transition hover:border-lagoon/40 hover:text-ink" aria-label="Próximo mês">
         <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true"><path d="M8 5l5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
       {% if not calendario.no_mes_atual %}
