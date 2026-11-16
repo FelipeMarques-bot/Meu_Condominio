@@ -1,0 +1,26 @@
+[Unit]
+Description=Meu Condominio (gunicorn)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=meucond
+Group=meucond
+WorkingDirectory=/srv/meu-condominio
+EnvironmentFile=/srv/meu-condominio/.env
+ExecStart=/srv/meu-condominio/.venv/bin/gunicorn config.wsgi:application \
+  --bind 127.0.0.1:8000 \
+  --workers 3 \
+  --threads 2 \
+  --timeout 90 \
+  --graceful-timeout 30 \
+  --access-logfile - \
+  --error-logfile -
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/meu-condominio/app.log
+StandardError=append:/var/log/meu-condominio/app.log
+
+[Install]
+WantedBy=multi-user.target

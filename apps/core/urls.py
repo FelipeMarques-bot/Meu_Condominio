@@ -2,20 +2,11 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from . import views
-from .forms import EntrarForm
 
 urlpatterns = [
     path("", views.landing, name="landing"),
     path("criar/", views.criar_condominio, name="criar_condominio"),
-    path(
-        "entrar/",
-        auth_views.LoginView.as_view(
-            template_name="core/login.html",
-            authentication_form=EntrarForm,
-            redirect_authenticated_user=True,
-        ),
-        name="login",
-    ),
+    path("entrar/", views.EntrarView.as_view(), name="login"),
     path("sair/", auth_views.LogoutView.as_view(), name="logout"),
     path("plataforma/entrar/", views.plataforma_entrar, name="plataforma_entrar"),
     path("plataforma/", views.plataforma_painel, name="plataforma"),
@@ -26,6 +17,12 @@ urlpatterns = [
     ),
     path("c/<slug:slug>/", views.painel_redirect, name="painel_redirect"),
     path("c/<slug:slug>/agenda/", views.agenda, name="agenda"),
+    path("c/<slug:slug>/conta/", views.minha_conta, name="minha_conta"),
+    path(
+        "c/<slug:slug>/conta/senha/",
+        views.TrocarSenhaView.as_view(),
+        name="trocar_senha",
+    ),
     path("c/<slug:slug>/gestao/", views.gestao, name="gestao"),
     path("c/<slug:slug>/configuracoes/", views.configuracoes, name="configuracoes"),
     path("c/<slug:slug>/identidade/", views.identidade, name="identidade"),

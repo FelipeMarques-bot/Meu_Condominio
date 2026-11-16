@@ -153,6 +153,14 @@
             </svg>
           </a>
         {% endif %}
+        {% if user.is_authenticated %}
+          <a href="{% url 'minha_conta' slug=condominio.slug %}" class="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-ink transition hover:bg-white/70">
+            Minha conta
+            <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4 text-muted" aria-hidden="true">
+              <path d="m7 4 6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+        {% endif %}
         <a href="{% url 'landing' %}" class="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-ink transition hover:bg-white/70">
           Início do site
           <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4 text-muted" aria-hidden="true">

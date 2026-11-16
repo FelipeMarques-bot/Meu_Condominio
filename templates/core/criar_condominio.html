@@ -17,11 +17,16 @@
     <section class="hidden lg:block">
       <p class="eyebrow">Novo condomínio</p>
       <h1 class="mt-2 font-display text-4xl font-light tracking-[-0.02em]">
-        Seu condomínio no ar em poucos minutos
+        {% if logado %}Outro condomínio em poucos minutos{% else %}Seu condomínio no ar em poucos minutos{% endif %}
       </h1>
       <p class="mt-4 max-w-md text-sm leading-relaxed text-muted">
-        Você cria a conta de síndico, a primeira unidade e o espaço já sai funcionando.
-        Depois é só cadastrar os locais, convidar os moradores e publicar a agenda.
+        {% if logado %}
+          Você continua na sua conta: o novo condomínio nasce com você como síndico,
+          com a primeira unidade e 14 dias de teste.
+        {% else %}
+          Você cria a conta de síndico, a primeira unidade e o espaço já sai funcionando.
+          Depois é só cadastrar os locais, convidar os moradores e publicar a agenda.
+        {% endif %}
       </p>
 
       <ul class="mt-8 space-y-4 text-sm">
@@ -43,10 +48,14 @@
     <div class="card p-6">
       <p class="eyebrow lg:hidden">Novo condomínio</p>
       <h2 class="mt-2 font-display text-2xl font-light tracking-[-0.02em] lg:mt-0">
-        Criar meu condomínio
+        {% if logado %}Criar outro condomínio{% else %}Criar meu condomínio{% endif %}
       </h2>
       <p class="mt-2 text-sm leading-relaxed text-muted">
-        Você entra como síndico da primeira unidade e pode convidar o restante depois.
+        {% if logado %}
+          Você será o síndico da primeira unidade deste condomínio.
+        {% else %}
+          Você entra como síndico da primeira unidade e pode convidar o restante depois.
+        {% endif %}
       </p>
 
       <form method="post" class="mt-5 space-y-4">
@@ -66,13 +75,17 @@
           </div>
         {% endfor %}
 
-        <button type="submit" class="btn btn-primary w-full">Começar teste de 14 dias</button>
+        <button type="submit" class="btn btn-primary w-full">
+          {% if logado %}Criar condomínio{% else %}Começar teste de 14 dias{% endif %}
+        </button>
       </form>
 
-      <p class="mt-4 text-center text-xs text-muted">
-        Já tem conta?
-        <a href="{% url 'login' %}" class="font-semibold text-lagoon hover:underline">Entrar</a>
-      </p>
+      {% if not logado %}
+        <p class="mt-4 text-center text-xs text-muted">
+          Já tem conta?
+          <a href="{% url 'login' %}" class="font-semibold text-lagoon hover:underline">Entrar</a>
+        </p>
+      {% endif %}
     </div>
   </div>
 </main>

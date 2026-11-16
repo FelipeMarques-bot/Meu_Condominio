@@ -1,6 +1,9 @@
 import * as THREE from "three";
 
-export function montarHero(container) {
+export function montarHero(container, opcoes = {}) {
+  const compacto =
+    opcoes.compacto ??
+    (container.dataset.heroVariant === "compacto" || window.innerWidth < 640);
   let renderer;
 
   try {
@@ -18,25 +21,29 @@ export function montarHero(container) {
   const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
   camera.position.set(0, 0, 7.2);
 
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, compacto ? 1.5 : 2));
   renderer.setClearColor(0x000000, 0);
   container.appendChild(renderer.domElement);
   renderer.domElement.style.width = "100%";
   renderer.domElement.style.height = "100%";
   renderer.domElement.style.display = "block";
 
+  const baseX = compacto ? 0 : 1.15;
+  const baseY = 0.1;
   const grupo = new THREE.Group();
-  grupo.position.set(1.15, 0.1, 0);
+  grupo.position.set(baseX, baseY, 0);
   cena.add(grupo);
 
+  const opacidadeLinha = compacto ? 0.42 : 0.26;
   const materialLinha = new THREE.LineBasicMaterial({
     color: 0x0e4a55,
     transparent: true,
-    opacity: 0.26,
+    opacity: opacidadeLinha,
   });
 
   const aneis = [];
-  [1.35, 1.85, 2.4].forEach((raio, indice) => {
+  const raios = compacto ? [1.0, 1.45, 1.9] : [1.35, 1.85, 2.4];
+  raios.forEach((raio, indice) => {
     const geometria = new THREE.RingGeometry(raio, raio + 0.004, 220);
     const anel = new THREE.LineLoop(geometria, materialLinha);
     anel.rotation.x = Math.PI / 2.35 + indice * 0.1;
@@ -45,11 +52,11 @@ export function montarHero(container) {
     aneis.push(anel);
   });
 
-  const quantidade = 160;
+  const quantidade = compacto ? 90 : 160;
   const posicoes = new Float32Array(quantidade * 3);
   for (let i = 0; i < quantidade; i += 1) {
     const angulo = Math.random() * Math.PI * 2;
-    const raio = 1.1 + Math.random() * 1.55;
+    const raio = (compacto ? 0.85 : 1.1) + Math.random() * (compacto ? 1.15 : 1.55);
     posicoes[i * 3] = Math.cos(angulo) * raio;
     posicoes[i * 3 + 1] = (Math.random() - 0.5) * 2.4;
     posicoes[i * 3 + 2] = Math.sin(angulo) * raio;
@@ -62,9 +69,9 @@ export function montarHero(container) {
     geometriaPontos,
     new THREE.PointsMaterial({
       color: 0xa9553a,
-      size: 0.028,
+      size: compacto ? 0.034 : 0.028,
       transparent: true,
-      opacity: 0.55,
+      opacity: compacto ? 0.7 : 0.55,
       sizeAttenuation: true,
     }),
   );
@@ -134,21 +141,24 @@ export function montarHero(container) {
 
     const p = progresso;
 
+    const deriva = compacto ? 0.35 : 0.95;
+    const profundidade = compacto ? 6.4 : 7.2;
+
     camera.position.set(
       -p * 0.55 + ponteiro.x * 0.16,
       p * 0.85 - ponteiro.y * 0.1,
-      7.2 - p * 0.85,
+      profundidade - p * 1.15,
     );
-    camera.lookAt(0.25, 0, 0);
+    camera.lookAt(compacto ? 0 : 0.25, 0, 0);
 
-    grupo.position.set(1.15 - p * 0.95, 0.1 - p * 0.7, p * 0.45);
-    grupo.rotation.y = tempo * 0.06 + ponteiro.x * 0.12 + p * 1.05;
-    grupo.rotation.x = ponteiro.y * 0.08 + p * 0.4;
-    grupo.rotation.z = p * -0.12;
-    grupo.scale.setScalar(1 + p * 0.08);
+    grupo.position.set(baseX - p * deriva, baseY - p * 0.7, p * 0.45);
+    grupo.rotation.y = tempo * 0.06 + ponteiro.x * 0.12 + p * 1.85;
+    grupo.rotation.x = ponteiro.y * 0.08 + p * 0.55;
+    grupo.rotation.z = p * -0.18;
+    grupo.scale.setScalar(1 + p * 0.16);
 
-    materialLinha.opacity = 0.26 - p * 0.12;
-    pontos.material.opacity = 0.55 - p * 0.22;
+    materialLinha.opacity = opacidadeLinha - p * 0.12;
+    pontos.material.opacity = (compacto ? 0.7 : 0.55) - p * 0.22;
 
     aneis.forEach((anel, indice) => {
       anel.rotation.z = tempo * (0.03 + indice * 0.012) + p * (0.4 + indice * 0.25);

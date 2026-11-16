@@ -9,6 +9,18 @@ from .permissoes import (
 )
 
 
+def _papel_no_condominio(usuario, condominio) -> str:
+    if not condominio:
+        return ""
+    if eh_sindico(usuario, condominio):
+        return "Síndico"
+    if eh_administradora(usuario, condominio):
+        return "Administradora"
+    if usuario.is_authenticated:
+        return "Morador"
+    return "Visitante"
+
+
 def marca(request):
     condominio = getattr(request, "condominio", None)
     usuario = request.user
@@ -16,6 +28,7 @@ def marca(request):
         "site_nome": settings.SITE_NOME,
         "contato_email": settings.CONTATO_EMAIL,
         "condominio_atual": condominio,
+        "papel_no_condominio": _papel_no_condominio(usuario, condominio),
         "sou_admin": bool(
             condominio and eh_admin_condominio(usuario, condominio)
         ),

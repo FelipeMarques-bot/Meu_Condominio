@@ -1,26 +1,36 @@
 services:
   - type: web
     name: meu-condominio
-    runtime: python
+    runtime: docker
     plan: free
-    buildCommand: "./build.sh"
-    startCommand: "gunicorn config.wsgi:application"
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.12.10"
       - key: DEBUG
         value: "False"
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: meu-condominio-db
+          property: connectionString
       - key: ALLOWED_HOSTS
         sync: false
       - key: CSRF_TRUSTED_ORIGINS
         sync: false
+      - key: SECURE_SSL_REDIRECT
+        value: "False"
       - key: DJANGO_SUPERUSER_USERNAME
         sync: false
       - key: DJANGO_SUPERUSER_EMAIL
         sync: false
       - key: DJANGO_SUPERUSER_PASSWORD
         sync: false
+      - key: SITE_NOME
+        value: Meu Condomínio
+
+databases:
+  - name: meu-condominio-db
+    plan: free
+    databaseName: meu_condominio
+    user: meu_condominio

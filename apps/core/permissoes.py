@@ -40,12 +40,10 @@ def existe_administradora(condominio) -> bool:
 
 
 def pode_gerir(usuario, condominio) -> bool:
-    """Ajustes do condomínio: administradora; síndico só se não houver administradora."""
+    """Ajustes do condomínio: síndico e administradora têm acesso completo."""
     if not usuario.is_authenticated:
         return False
-    if usuario.is_superuser or eh_administradora(usuario, condominio):
-        return True
-    return eh_sindico(usuario, condominio) and not existe_administradora(condominio)
+    return eh_sindico(usuario, condominio) or eh_administradora(usuario, condominio)
 
 
 def pode_aprovar(usuario, condominio) -> bool:

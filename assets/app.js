@@ -1,33 +1,47 @@
 import "./app.css";
 import htmx from "htmx.org";
 import Alpine from "alpinejs";
-import { animate, stagger } from "animejs";
 
 window.htmx = htmx;
 window.Alpine = Alpine;
 Alpine.start();
 
 const prefereMenosMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const alvos = document.querySelectorAll(".reveal");
+const revelaveis = document.querySelectorAll(".reveal");
 
-if (!prefereMenosMovimento && alvos.length) {
-  animate(alvos, {
-    opacity: [0, 1],
-    translateY: [18, 0],
-    duration: 780,
-    delay: stagger(70),
-    ease: "out(4)",
+if (!prefereMenosMovimento && revelaveis.length) {
+  document.documentElement.classList.add("reveal-ativo");
+
+  const observador = new IntersectionObserver(
+    (entradas) => {
+      entradas.forEach((entrada) => {
+        if (!entrada.isIntersecting) return;
+        entrada.target.classList.add("revelado");
+        observador.unobserve(entrada.target);
+      });
+    },
+    { threshold: 0.12, rootMargin: "0px 0px -8% 0px" },
+  );
+
+  revelaveis.forEach((elemento) => {
+    const irmaos = Array.from(
+      elemento.parentElement?.querySelectorAll(":scope > .reveal") ?? [],
+    );
+    const posicao = Math.max(irmaos.indexOf(elemento), 0);
+    elemento.style.transitionDelay = `${Math.min(posicao, 7) * 70}ms`;
+    observador.observe(elemento);
   });
 }
 
-const podeUsarTresD = window.matchMedia("(min-width: 1024px)").matches;
-const canvasHero = document.querySelector("[data-hero-canvas]");
+const canvasesHero = document.querySelectorAll("[data-hero-canvas]");
 
-if (podeUsarTresD && !prefereMenosMovimento && canvasHero) {
+if (!prefereMenosMovimento && canvasesHero.length) {
   import("./hero3d.js")
-    .then(({ montarHero }) => montarHero(canvasHero))
+    .then(({ montarHero }) => {
+      canvasesHero.forEach((canvas) => montarHero(canvas));
+    })
     .catch(() => {
-      canvasHero.remove();
+      canvasesHero.forEach((canvas) => canvas.remove());
     });
 }
 

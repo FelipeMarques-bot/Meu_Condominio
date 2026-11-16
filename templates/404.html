@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Página não encontrada · {{ site_nome }}{% endblock %}
+
+{% block body %}
+<main id="conteudo" class="grid min-h-dvh place-items-center px-5 py-10">
+  <div class="w-full max-w-md text-center">
+    <p class="eyebrow">404</p>
+    <h1 class="mt-3 font-display text-4xl font-light tracking-[-0.02em]">Esta página saiu para reservar outro espaço</h1>
+    <p class="mt-4 text-sm leading-relaxed text-muted">
+      O endereço não existe ou o condomínio não está mais ativo.
+    </p>
+    <a href="{% url 'landing' %}" class="btn btn-primary mt-7">Voltar ao início</a>
+  </div>
+</main>
+{% endblock %}

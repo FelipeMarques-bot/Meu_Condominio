@@ -235,6 +235,44 @@ class NovoCondominioForm(forms.ModelForm):
         help_texts = {"slug": "Endereço curto, por exemplo bela-vista."}
 
 
+class CondominioDoUsuarioForm(forms.Form):
+    """Logado: cria um novo condomínio e vincula a conta atual como síndico."""
+
+    nome = forms.CharField(
+        label="Nome do condomínio",
+        max_length=120,
+        widget=forms.TextInput(
+            attrs={**CAMPO_TEXTO, "placeholder": "Condomínio Jardim das Flores"}
+        ),
+    )
+    slug = forms.SlugField(
+        label="Endereço do condomínio",
+        max_length=60,
+        required=False,
+        help_text="Vira /c/endereco/. Em branco, criamos a partir do nome.",
+        widget=forms.TextInput(
+            attrs={**CAMPO_TEXTO, "placeholder": "jardim-das-flores"}
+        ),
+    )
+    bloco = forms.CharField(
+        label="Bloco (opcional)",
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "A"}),
+    )
+    numero = forms.CharField(
+        label="Número da sua unidade",
+        max_length=20,
+        widget=forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "101"}),
+    )
+
+    def clean_slug(self):
+        slug = self.cleaned_data.get("slug")
+        if slug and Condominio.objects.filter(slug=slug).exists():
+            raise ValidationError("Este endereço já está em uso.")
+        return slug
+
+
 class OnboardingForm(CadastroConviteForm):
     """Cadastro público: cria o condomínio, a primeira unidade e a conta do síndico."""
 

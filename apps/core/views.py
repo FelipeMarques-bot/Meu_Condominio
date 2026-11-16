@@ -4,6 +4,7 @@ from functools import wraps
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.db import transaction
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,6 +17,7 @@ from apps.usuarios.forms import CadastroConviteForm, ConviteForm
 from apps.usuarios.models import Convite, Unidade, Usuario, VinculoUnidade
 
 from .forms import (
+    CondominioDoUsuarioForm,
     ConfiguracaoForm,
     EntrarForm,
     IdentidadeForm,
@@ -52,7 +54,12 @@ def landing(request):
     return render(
         request,
         "core/landing.html",
-        {"planos": Plano.objects.filter(ativo=True)},
+        {
+            "planos": Plano.objects.filter(ativo=True),
+            "condominio_demo": Condominio.objects.filter(
+                slug="bela-vista", ativo=True
+            ).first(),
+        },
     )
 
 
@@ -67,16 +74,38 @@ def _slug_condominio(nome: str) -> str:
 
 
 def criar_condominio(request):
-    """Onboarding self-service: condomínio, primeira unidade e conta de síndico."""
+    """Onboarding: condomínio, primeira unidade e conta (ou vínculo) de síndico."""
     if request.user.is_authenticated:
-        vinculo = (
-            request.user.vinculos.filter(ativo=True)
-            .select_related("unidade__condominio")
-            .first()
+        form = CondominioDoUsuarioForm(request.POST or None)
+        if request.method == "POST" and form.is_valid():
+            dados = form.cleaned_data
+            with transaction.atomic():
+                condominio = Condominio.objects.create(
+                    nome=dados["nome"],
+                    slug=dados["slug"] or _slug_condominio(dados["nome"]),
+                    plano=Plano.para_quantidade(1),
+                    trial_ate=timezone.now() + timedelta(days=14),
+                )
+                unidade = Unidade.objects.create(
+                    condominio=condominio,
+                    bloco=dados["bloco"],
+                    numero=dados["numero"],
+                )
+                VinculoUnidade.objects.create(
+                    usuario=request.user,
+                    unidade=unidade,
+                    papel=VinculoUnidade.Papel.SINDICO,
+                )
+            messages.success(
+                request,
+                f"{condominio.nome} criado! Você é síndico e tem 14 dias de teste.",
+            )
+            return redirect("gestao", slug=condominio.slug)
+        return render(
+            request,
+            "core/criar_condominio.html",
+            {"form": form, "logado": True},
         )
-        if vinculo is not None:
-            return redirect("gestao", slug=vinculo.unidade.condominio.slug)
-        return redirect("landing")
 
     form = OnboardingForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -118,6 +147,57 @@ def criar_condominio(request):
 
 def painel_redirect(request, slug):
     return redirect("agenda", slug=slug)
+
+
+class EntrarView(LoginView):
+    template_name = "core/login.html"
+    authentication_form = EntrarForm
+    redirect_authenticated_user = True
+
+    def get_success_url(self):
+        url = self.get_redirect_url()
+        if url:
+            return url
+        usuario = self.request.user
+        if usuario.is_superuser:
+            return reverse("plataforma")
+        vinculo = (
+            usuario.vinculos.filter(ativo=True)
+            .select_related("unidade__condominio")
+            .order_by("pk")
+            .first()
+        )
+        if vinculo is not None:
+            return reverse("agenda", args=[vinculo.unidade.condominio.slug])
+        return reverse("landing")
+
+
+@login_required
+def minha_conta(request, slug):
+    condominio = getattr(request, "condominio", None) or get_object_or_404(
+        Condominio, slug=slug, ativo=True
+    )
+    vinculos = (
+        request.user.vinculos.filter(ativo=True, unidade__condominio=condominio)
+        .select_related("unidade")
+        .order_by("unidade__bloco", "unidade__numero")
+    )
+    return render(
+        request,
+        "core/minha_conta.html",
+        {"condominio": condominio, "vinculos": vinculos},
+    )
+
+
+class TrocarSenhaView(PasswordChangeView):
+    template_name = "core/senha.html"
+
+    def form_valid(self, form):
+        messages.success(self.request, "Senha atualizada com sucesso.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("minha_conta", args=[self.kwargs["slug"]])
 
 
 def agenda(request, slug):

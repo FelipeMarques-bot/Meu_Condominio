@@ -113,20 +113,68 @@ class OnboardingTests(TestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertFalse(Condominio.objects.exists())
 
-    def test_usuario_autenticado_vai_para_a_gestao(self):
+    def test_usuario_logado_ve_formulario_de_novo_condominio(self):
         condominio = Condominio.objects.create(nome="Bela Vista", slug="bela-vista")
         unidade = Unidade.objects.create(condominio=condominio, numero="101")
-        sindico = Usuario.objects.create_user(username="sindico", password=SENHA)
+        morador = Usuario.objects.create_user(username="morador", password=SENHA)
         VinculoUnidade.objects.create(
-            usuario=sindico, unidade=unidade, papel=VinculoUnidade.Papel.SINDICO
+            usuario=morador, unidade=unidade, papel=VinculoUnidade.Papel.MORADOR
         )
-        self.client.force_login(sindico)
+        self.client.force_login(morador)
 
         resposta = self.client.get(reverse("criar_condominio"))
 
-        self.assertRedirects(
-            resposta, reverse("gestao", args=["bela-vista"]), fetch_redirect_response=False
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Criar outro condomínio")
+        self.assertContains(resposta, 'name="numero"')
+
+    def test_usuario_logado_cria_outro_condominio_sem_trocar_de_conta(self):
+        antigo = Condominio.objects.create(nome="Bela Vista", slug="bela-vista")
+        unidade = Unidade.objects.create(condominio=antigo, numero="101")
+        morador = Usuario.objects.create_user(username="morador", password=SENHA)
+        VinculoUnidade.objects.create(
+            usuario=morador, unidade=unidade, papel=VinculoUnidade.Papel.MORADOR
         )
+        self.client.force_login(morador)
+
+        resposta = self.client.post(
+            reverse("criar_condominio"),
+            {
+                "nome": "Jardim das Flores",
+                "slug": "jardim-das-flores",
+                "bloco": "B",
+                "numero": "202",
+            },
+        )
+
+        novo = Condominio.objects.get(slug="jardim-das-flores")
+        self.assertRedirects(
+            resposta,
+            reverse("gestao", args=[novo.slug]),
+            fetch_redirect_response=False,
+        )
+        self.assertTrue(
+            VinculoUnidade.objects.filter(
+                usuario=morador,
+                unidade__condominio=novo,
+                papel=VinculoUnidade.Papel.SINDICO,
+                ativo=True,
+            ).exists()
+        )
+        self.assertTrue(Usuario.objects.filter(pk=morador.pk).exists())
+
+    def test_usuario_logado_nao_usa_slug_existente(self):
+        Condominio.objects.create(nome="Bela Vista", slug="bela-vista")
+        usuario = Usuario.objects.create_user(username="sindico", password=SENHA)
+        self.client.force_login(usuario)
+
+        resposta = self.client.post(
+            reverse("criar_condominio"),
+            {"nome": "Outro", "slug": "bela-vista", "numero": "101"},
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(Condominio.objects.count(), 1)
 
     def test_trial_de_14_dias(self):
         self.client.post(reverse("criar_condominio"), dados())

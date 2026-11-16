@@ -1,0 +1,46 @@
+{
+	# HTTPS automático via Let's Encrypt
+	email admin@__DOMINIO__
+
+	# Compressão e cabeçalhos de segurança básicos
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Uploads de comprovantes (Django grava em MEDIA_ROOT)
+	handle_path /media/* {
+		root * __APP_DIR__/media
+		file_server
+	}
+
+	# Estáticos do collectstatic (Whitenoise também serve, isto é o caminho rápido)
+	handle_path /static/* {
+		root * __APP_DIR__/staticfiles
+		file_server {
+			precompressed gzip br
+		}
+	}
+
+	# Aplicação
+	handle {
+		reverse_proxy 127.0.0.1:8000 {
+			header_up X-Forwarded-Proto https
+			transport http {
+				read_timeout 120s
+				write_timeout 120s
+			}
+		}
+	}
+
+	log {
+		output file /var/log/meu-condominio/caddy.log {
+			roll_size 20MB
+			roll_keep 5
+		}
+	}
+}

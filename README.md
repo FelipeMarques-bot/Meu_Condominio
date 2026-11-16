@@ -152,18 +152,25 @@ Variáveis principais (veja `.env.example`):
 
 ### Superusuário sem código
 
-O deploy roda `python manage.py garantir_superusuario` (em `build.sh`). Ele lê apenas `DJANGO_SUPERUSER_USERNAME` e `DJANGO_SUPERUSER_PASSWORD` do ambiente: se as variáveis não existirem, não faz nada; se o usuário já existir, não altera a senha. Para redefinir depois, rode `python manage.py garantir_superusuario --atualizar-senha` com a nova senha no ambiente. Nada de usuário ou senha no repositório.
+O deploy roda `python manage.py garantir_superusuario` (em `build.sh` localmente e no `Dockerfile` do Render). Ele lê apenas `DJANGO_SUPERUSER_USERNAME` e `DJANGO_SUPERUSER_PASSWORD` do ambiente: se as variáveis não existirem, não faz nada; se o usuário já existir, não altera a senha. Para redefinir depois, rode `python manage.py garantir_superusuario --atualizar-senha` com a nova senha no ambiente. Nada de usuário ou senha no repositório.
 
 No Neon, use o host com `-pooler` e mantenha `DB_DISABLE_SERVER_SIDE_CURSORS=True` (padrão).
 
-## Deploy (Render + Neon)
+## Deploy (Render)
 
-1. Crie o banco no Neon e copie a URL com `-pooler` e `sslmode=require`.
-2. Crie um Web Service no Render apontando para este repositório.
-3. Configure `DATABASE_URL`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` e `SECRET_KEY`.
-4. O `render.yaml` já define build (`./build.sh`), migrações e `gunicorn`.
+1. Suba o repositório no GitHub e, no Render, use **New > Blueprint** apontando para ele (o `render.yaml` cria o Web Service e o Postgres free).
+2. Configure as variáveis `sync: false` no painel: `ALLOWED_HOSTS` (ex.: `meu-condominio.onrender.com`), `CSRF_TRUSTED_ORIGINS` (ex.: `https://meu-condominio.onrender.com`) e as `DJANGO_SUPERUSER_*`.
+3. O `Dockerfile` compila o Vite (Node 20), coleta os estáticos, roda migrações/cache e sobe o `gunicorn`; `RENDER_EXTERNAL_HOSTNAME` já entra em `ALLOWED_HOSTS` e `CSRF_TRUSTED_ORIGINS` automaticamente.
+4. `SECURE_SSL_REDIRECT` fica `False` no blueprint porque o Render encerra o TLS na borda; os cookies continuam `Secure` e o HSTS ativo.
 
-O plano free do Render hiberna; o primeiro acesso após inatividade pode demorar.
+O plano free do Render hiberna; o primeiro acesso após inatividade pode demorar. O disco também é efêmero: logos e comprovantes enviados somem a cada deploy. Para produção real, troque `MEDIA` por S3/R2 (ou um disco persistente pago).
+
+Para rodar exatamente como no Render localmente:
+
+```bash
+docker build -t meu-condominio .
+docker run --rm -p 8000:8000 --env-file .env meu-condominio
+```
 
 ## Planos
 
