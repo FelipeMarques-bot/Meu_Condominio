@@ -46,7 +46,7 @@
       <ul class="mt-4 divide-y divide-line/70">
         {% for vinculo in vinculos %}
           <li class="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
-            <span class="font-semibold">{{ vinculo.unidade.rotulo }}</span>
+            <span class="font-semibold">{% if vinculo.unidade.administrativa %}Síndico do condomínio{% else %}{{ vinculo.unidade.rotulo }}{% endif %}</span>
             <span class="pill">{{ vinculo.get_papel_display }}</span>
           </li>
         {% endfor %}

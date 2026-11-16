@@ -33,6 +33,12 @@
           {% for erro in form.nome.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
         </div>
         <div>
+          <label for="{{ form.quantidade_unidades.id_for_label }}" class="text-xs font-semibold text-muted">{{ form.quantidade_unidades.label }}</label>
+          <div class="mt-1">{{ form.quantidade_unidades }}</div>
+          {% if form.quantidade_unidades.help_text %}<p class="mt-1 text-[0.7rem] text-muted">{{ form.quantidade_unidades.help_text }}</p>{% endif %}
+          {% for erro in form.quantidade_unidades.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
+        </div>
+        <div>
           <label for="{{ form.logo.id_for_label }}" class="text-xs font-semibold text-muted">{{ form.logo.label }}</label>
           <div class="mt-1">{{ form.logo }}</div>
           <p class="mt-1 text-[0.7rem] text-muted">PNG, JPG ou WebP. Envie uma imagem quadrada para melhor resultado.</p>

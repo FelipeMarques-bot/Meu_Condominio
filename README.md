@@ -193,7 +193,12 @@ No Render free o disco é efêmero: logos, fotos de espaços e comprovantes some
 
 Com isso, logos e fotos usam o bucket público (`media/`), e comprovantes vão para o bucket privado (`privado/`) com URL assinada. Sem essas variáveis, tudo continua no disco local.
 
-**Cloudinary (alternativa):** funciona bem para logos e fotos, mas não para comprovantes privados. Crie a conta, instale `cloudinary` + `django-cloudinary-storage`, configure `CLOUDINARY_STORAGE` com `cloud_name`/`api_key`/`api_secret` e troque o backend `default` para `cloudinary_storage.storage.MediaCloudinaryStorage`. Mantenha os comprovantes no R2 (ou no disco). Confirme a compatibilidade do pacote com Django 5.2 antes de usar em produção.
+**Cloudinary (opcional, já plugado):** se `CLOUDINARY_CLOUD_NAME` estiver definido e o R2 não estiver, logos e fotos passam a ir para o Cloudinary. A prioridade é **R2 > Cloudinary > disco local**.
+
+1. No dashboard do Cloudinary, copie **Cloud name**, **API Key** e **API Secret**.
+2. No Render, defina `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` e `CLOUDINARY_API_SECRET` e faça redeploy.
+
+Comprovantes continuam no disco local (ou no R2, se configurado), porque o Cloudinary entrega arquivos publicamente e não serve para documentos privados.
 
 ## Planos
 

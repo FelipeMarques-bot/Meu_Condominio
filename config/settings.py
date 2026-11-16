@@ -179,6 +179,30 @@ if STORAGE_S3_ATIVO:
     AWS_QUERYSTRING_AUTH = False
     AWS_S3_SIGNATURE_VERSION = "s3v4"
     STORAGES["default"] = {"BACKEND": "apps.core.storage_s3.ArmazenamentoPublico"}
+elif env("CLOUDINARY_CLOUD_NAME"):
+    import cloudinary
+
+    CLOUDINARY_CLOUD_NAME = env("CLOUDINARY_CLOUD_NAME")
+    CLOUDINARY_API_KEY = env("CLOUDINARY_API_KEY")
+    CLOUDINARY_API_SECRET = env("CLOUDINARY_API_SECRET")
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": CLOUDINARY_CLOUD_NAME,
+        "API_KEY": CLOUDINARY_API_KEY,
+        "API_SECRET": CLOUDINARY_API_SECRET,
+        "SECURE": True,
+    }
+    cloudinary.config(
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET,
+        secure=True,
+    )
+    INSTALLED_APPS.insert(
+        INSTALLED_APPS.index("django.contrib.staticfiles"), "cloudinary_storage"
+    )
+    STORAGES["default"] = {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage"
+    }
 
 WHITENOISE_MAX_AGE = 0 if DEBUG else 31536000
 

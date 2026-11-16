@@ -29,6 +29,10 @@ class Unidade(models.Model):
     )
     bloco = models.CharField(max_length=20, blank=True)
     numero = models.CharField(max_length=20)
+    administrativa = models.BooleanField(
+        default=False,
+        help_text="Unidade técnica do síndico/administradora; não conta como lote.",
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:

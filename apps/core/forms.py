@@ -215,24 +215,67 @@ class UnidadeForm(forms.ModelForm):
 class IdentidadeForm(forms.ModelForm):
     class Meta:
         model = Condominio
-        fields = ["nome", "logo"]
+        fields = ["nome", "logo", "quantidade_unidades"]
+        labels = {
+            "quantidade_unidades": "Quantidade de unidades",
+        }
+        help_texts = {
+            "quantidade_unidades": (
+                "Lotes, apartamentos ou casas. Usamos para sugerir o plano; "
+                "0 conta as unidades cadastradas."
+            ),
+        }
         widgets = {
             "nome": forms.TextInput(attrs=CAMPO_TEXTO),
+            "quantidade_unidades": forms.NumberInput(attrs={**CAMPO_TEXTO, "min": 0}),
             "logo": forms.ClearableFileInput(
                 attrs={"accept": "image/*", **CAMPO_ARQUIVO}
             ),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["quantidade_unidades"].required = False
+
+    def clean_quantidade_unidades(self):
+        return self.cleaned_data.get("quantidade_unidades") or 0
+
+
+def slug_condominio_unico(nome: str, digitado: str = "") -> str:
+    base = slugify(digitado or nome) or "condominio"
+    slug = base
+    numero = 2
+    while Condominio.objects.filter(slug=slug).exists():
+        slug = f"{base}-{numero}"
+        numero += 1
+    return slug
+
 
 class NovoCondominioForm(forms.ModelForm):
+    slug = forms.CharField(
+        label="Endereço curto",
+        max_length=60,
+        required=False,
+        widget=forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "jardim"}),
+        help_text="Pode digitar por extenso. Em branco, criamos a partir do nome.",
+    )
+
     class Meta:
         model = Condominio
         fields = ["nome", "slug"]
         widgets = {
             "nome": forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "Condomínio Jardim"}),
-            "slug": forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "jardim"}),
         }
-        help_texts = {"slug": "Endereço curto, por exemplo bela-vista."}
+
+    def clean_slug(self):
+        return slugify(self.cleaned_data.get("slug") or "")
+
+    def save(self, commit=True):
+        condominio = super().save(commit=False)
+        condominio.slug = slug_condominio_unico(condominio.nome, condominio.slug)
+        if commit:
+            condominio.save()
+        return condominio
 
 
 class CondominioDoUsuarioForm(forms.Form):
@@ -245,36 +288,22 @@ class CondominioDoUsuarioForm(forms.Form):
             attrs={**CAMPO_TEXTO, "placeholder": "Condomínio Jardim das Flores"}
         ),
     )
-    slug = forms.SlugField(
-        label="Endereço do condomínio",
+    slug = forms.CharField(
+        label="Endereço curto (opcional)",
         max_length=60,
         required=False,
-        help_text="Vira /c/endereco/. Em branco, criamos a partir do nome.",
+        help_text="Pode digitar por extenso. Em branco, criamos a partir do nome.",
         widget=forms.TextInput(
             attrs={**CAMPO_TEXTO, "placeholder": "jardim-das-flores"}
         ),
     )
-    bloco = forms.CharField(
-        label="Bloco (opcional)",
-        max_length=20,
-        required=False,
-        widget=forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "A"}),
-    )
-    numero = forms.CharField(
-        label="Número da sua unidade",
-        max_length=20,
-        widget=forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "101"}),
-    )
 
     def clean_slug(self):
-        slug = self.cleaned_data.get("slug")
-        if slug and Condominio.objects.filter(slug=slug).exists():
-            raise ValidationError("Este endereço já está em uso.")
-        return slug
+        return slugify(self.cleaned_data.get("slug") or "")
 
 
 class OnboardingForm(CadastroConviteForm):
-    """Cadastro público: cria o condomínio, a primeira unidade e a conta do síndico."""
+    """Cadastro público: cria o condomínio e a conta do síndico."""
 
     condominio = forms.CharField(
         label="Nome do condomínio",
@@ -283,25 +312,14 @@ class OnboardingForm(CadastroConviteForm):
             attrs={**CAMPO_TEXTO, "placeholder": "Condomínio Jardim das Flores"}
         ),
     )
-    slug = forms.SlugField(
-        label="Endereço do condomínio",
+    slug = forms.CharField(
+        label="Endereço curto (opcional)",
         max_length=60,
         required=False,
-        help_text="Vira /c/endereco/. Em branco, criamos a partir do nome.",
+        help_text="Pode digitar por extenso. Em branco, criamos a partir do nome.",
         widget=forms.TextInput(
             attrs={**CAMPO_TEXTO, "placeholder": "jardim-das-flores"}
         ),
-    )
-    bloco = forms.CharField(
-        label="Bloco (opcional)",
-        max_length=20,
-        required=False,
-        widget=forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "A"}),
-    )
-    numero = forms.CharField(
-        label="Sua unidade",
-        max_length=20,
-        widget=forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "101"}),
     )
 
     def __init__(self, *args, **kwargs):
@@ -316,22 +334,10 @@ class OnboardingForm(CadastroConviteForm):
                 "username",
                 "email",
                 "telefone",
-                "bloco",
-                "numero",
                 "senha",
                 "confirmar_senha",
             ]
         )
 
     def clean_slug(self):
-        slug = self.cleaned_data.get("slug") or ""
-        slug = slugify(slug)
-        if slug and Condominio.objects.filter(slug=slug).exists():
-            raise forms.ValidationError("Este endereço já está em uso. Escolha outro.")
-        return slug
-
-    def clean_numero(self):
-        numero = (self.cleaned_data.get("numero") or "").strip()
-        if not numero:
-            raise forms.ValidationError("Informe o número da sua unidade.")
-        return numero
+        return slugify(self.cleaned_data.get("slug") or "")

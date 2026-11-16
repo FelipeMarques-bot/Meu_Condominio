@@ -59,6 +59,13 @@ class Condominio(models.Model):
         blank=True,
         help_text="Fim do período de teste. Em branco significa sem prazo de teste.",
     )
+    quantidade_unidades = models.PositiveIntegerField(
+        default=0,
+        help_text=(
+            "Quantidade de lotes, apartamentos ou casas do condomínio. "
+            "0 usa a contagem de unidades cadastradas."
+        ),
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:

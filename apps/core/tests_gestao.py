@@ -358,6 +358,19 @@ class IdentidadeTests(TestCase):
         self.assertEqual(self.condominio.nome, "Bela Vista Residence")
         self.assertTrue(self.condominio.logo)
 
+    def test_quantidade_declarada_alimenta_a_gestao(self):
+        resposta = self.client.post(
+            reverse("identidade", args=[self.condominio.slug]),
+            {"nome": "Bela Vista", "quantidade_unidades": 48},
+        )
+
+        self.assertEqual(resposta.status_code, 302)
+        self.condominio.refresh_from_db()
+        self.assertEqual(self.condominio.quantidade_unidades, 48)
+        self.assertContains(
+            self.client.get(reverse("gestao", args=[self.condominio.slug])), "48"
+        )
+
 
 class PlataformaTests(TestCase):
     def setUp(self):
@@ -391,6 +404,16 @@ class PlataformaTests(TestCase):
 
         self.assertEqual(resposta.status_code, 302)
         self.assertTrue(Condominio.objects.filter(slug="jardim-azul").exists())
+
+    def test_quantidade_declarada_sugere_plano_maior(self):
+        self.client.force_login(self.dono)
+        self.condominio.quantidade_unidades = 60
+        self.condominio.save()
+
+        resposta = self.client.get(reverse("plataforma"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.context["condominios"][0].plano_sugerido.slug, "pro")
 
     def test_painel_da_plataforma_exige_superuser(self):
         morador = criar_usuario("morador", self.unidade, VinculoUnidade.Papel.MORADOR)

@@ -8,3 +8,5 @@ qrcode[pil]>=8.0
 psycopg[binary]>=3.2
 gunicorn>=23.0
 django-storages[s3]>=1.14
+cloudinary>=1.44
+django-cloudinary-storage>=0.3

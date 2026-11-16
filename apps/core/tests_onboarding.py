@@ -18,8 +18,6 @@ def dados(**extras):
         "username": "ana",
         "email": "ana@example.com",
         "telefone": "(47) 99999-0000",
-        "bloco": "A",
-        "numero": "101",
         "senha": SENHA,
         "confirmar_senha": SENHA,
     }
@@ -49,7 +47,8 @@ class OnboardingTests(TestCase):
         self.assertTrue(ConfiguracaoCondominio.objects.filter(condominio=condominio).exists())
 
         unidade = Unidade.objects.get(condominio=condominio)
-        self.assertEqual((unidade.bloco, unidade.numero), ("A", "101"))
+        self.assertEqual(unidade.numero, "Administração")
+        self.assertTrue(unidade.administrativa)
 
         usuario = Usuario.objects.get(username="ana")
         self.assertEqual(usuario.first_name, "Ana Souza")
@@ -84,15 +83,27 @@ class OnboardingTests(TestCase):
         slugs = set(Condominio.objects.values_list("slug", flat=True))
         self.assertEqual(slugs, {"jardim-das-flores", "jardim-das-flores-2"})
 
-    def test_slug_em_uso_bloqueia(self):
+    def test_slug_em_uso_ganha_sufixo(self):
         Condominio.objects.create(nome="Existente", slug="jardim-das-flores")
 
-        resposta = self.client.post(reverse("criar_condominio"), dados(slug="jardim-das-flores"))
+        resposta = self.client.post(
+            reverse("criar_condominio"), dados(slug="jardim-das-flores")
+        )
 
-        self.assertEqual(resposta.status_code, 200)
-        self.assertContains(resposta, "já está em uso")
-        self.assertEqual(Condominio.objects.count(), 1)
-        self.assertFalse(Usuario.objects.filter(username="ana").exists())
+        self.assertEqual(resposta.status_code, 302)
+        self.assertEqual(
+            Condominio.objects.get(nome="Jardim das Flores").slug,
+            "jardim-das-flores-2",
+        )
+
+    def test_slug_aceito_por_extenso(self):
+        self.client.post(
+            reverse("criar_condominio"), dados(slug="Condomínio Bela Vista, 123")
+        )
+
+        self.assertEqual(
+            Condominio.objects.get().slug, "condominio-bela-vista-123"
+        )
 
     def test_senha_divergente_nao_cria_nada(self):
         resposta = self.client.post(
@@ -126,7 +137,8 @@ class OnboardingTests(TestCase):
 
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, "Criar outro condomínio")
-        self.assertContains(resposta, 'name="numero"')
+        self.assertContains(resposta, 'name="slug"')
+        self.assertNotContains(resposta, 'name="numero"')
 
     def test_usuario_logado_cria_outro_condominio_sem_trocar_de_conta(self):
         antigo = Condominio.objects.create(nome="Bela Vista", slug="bela-vista")
@@ -142,8 +154,6 @@ class OnboardingTests(TestCase):
             {
                 "nome": "Jardim das Flores",
                 "slug": "jardim-das-flores",
-                "bloco": "B",
-                "numero": "202",
             },
         )
 
@@ -163,18 +173,19 @@ class OnboardingTests(TestCase):
         )
         self.assertTrue(Usuario.objects.filter(pk=morador.pk).exists())
 
-    def test_usuario_logado_nao_usa_slug_existente(self):
+    def test_usuario_logado_com_slug_existente_recebe_sufixo(self):
         Condominio.objects.create(nome="Bela Vista", slug="bela-vista")
         usuario = Usuario.objects.create_user(username="sindico", password=SENHA)
         self.client.force_login(usuario)
 
         resposta = self.client.post(
             reverse("criar_condominio"),
-            {"nome": "Outro", "slug": "bela-vista", "numero": "101"},
+            {"nome": "Outro", "slug": "bela-vista"},
         )
 
-        self.assertEqual(resposta.status_code, 200)
-        self.assertEqual(Condominio.objects.count(), 1)
+        self.assertEqual(resposta.status_code, 302)
+        self.assertEqual(Condominio.objects.count(), 2)
+        self.assertTrue(Condominio.objects.filter(slug="bela-vista-2").exists())
 
     def test_trial_de_14_dias(self):
         self.client.post(reverse("criar_condominio"), dados())

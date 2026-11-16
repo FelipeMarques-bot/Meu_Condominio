@@ -6,7 +6,7 @@ from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -25,6 +25,7 @@ from .forms import (
     NovoCondominioForm,
     OnboardingForm,
     UnidadeForm,
+    slug_condominio_unico,
 )
 from .models import Condominio, Plano
 from .permissoes import gestao_required
@@ -63,16 +64,6 @@ def landing(request):
     )
 
 
-def _slug_condominio(nome: str) -> str:
-    base = slugify(nome) or "condominio"
-    slug = base
-    numero = 2
-    while Condominio.objects.filter(slug=slug).exists():
-        slug = f"{base}-{numero}"
-        numero += 1
-    return slug
-
-
 def criar_condominio(request):
     """Onboarding: condomínio, primeira unidade e conta (ou vínculo) de síndico."""
     if request.user.is_authenticated:
@@ -82,14 +73,14 @@ def criar_condominio(request):
             with transaction.atomic():
                 condominio = Condominio.objects.create(
                     nome=dados["nome"],
-                    slug=dados["slug"] or _slug_condominio(dados["nome"]),
+                    slug=slug_condominio_unico(dados["nome"], dados["slug"]),
                     plano=Plano.para_quantidade(1),
                     trial_ate=timezone.now() + timedelta(days=14),
                 )
                 unidade = Unidade.objects.create(
                     condominio=condominio,
-                    bloco=dados["bloco"],
-                    numero=dados["numero"],
+                    numero="Administração",
+                    administrativa=True,
                 )
                 VinculoUnidade.objects.create(
                     usuario=request.user,
@@ -113,14 +104,14 @@ def criar_condominio(request):
         with transaction.atomic():
             condominio = Condominio.objects.create(
                 nome=dados["condominio"],
-                slug=dados["slug"] or _slug_condominio(dados["condominio"]),
+                slug=slug_condominio_unico(dados["condominio"], dados["slug"]),
                 plano=Plano.para_quantidade(1),
                 trial_ate=timezone.now() + timedelta(days=14),
             )
             unidade = Unidade.objects.create(
                 condominio=condominio,
-                bloco=dados["bloco"],
-                numero=dados["numero"],
+                numero="Administração",
+                administrativa=True,
             )
             usuario = Usuario.objects.create_user(
                 username=dados["username"],
@@ -230,7 +221,8 @@ def gestao(request, slug):
         {
             "condominio": condominio,
             "qtd_locais": Local.all_objects.filter(condominio=condominio).count(),
-            "qtd_unidades": condominio.unidades.count(),
+            "qtd_unidades": condominio.quantidade_unidades
+            or condominio.unidades.filter(administrativa=False).count(),
             "qtd_convites": Convite.objects.filter(
                 condominio=condominio, usado_em__isnull=True
             ).count(),
@@ -370,7 +362,7 @@ def unidades(request, slug):
         {
             "condominio": condominio,
             "form": form,
-            "unidades": condominio.unidades.all(),
+            "unidades": condominio.unidades.filter(administrativa=False),
             "editando": None,
         },
     )
@@ -380,7 +372,7 @@ def unidades(request, slug):
 @gestao_required
 def unidade_editar(request, slug, pk):
     condominio = _condominio(request)
-    unidade = get_object_or_404(condominio.unidades, pk=pk)
+    unidade = get_object_or_404(condominio.unidades.filter(administrativa=False), pk=pk)
     form = UnidadeForm(request.POST or None, instance=unidade, condominio=condominio)
 
     if request.method == "POST" and form.is_valid():
@@ -394,7 +386,7 @@ def unidade_editar(request, slug, pk):
         {
             "condominio": condominio,
             "form": form,
-            "unidades": condominio.unidades.all(),
+            "unidades": condominio.unidades.filter(administrativa=False),
             "editando": unidade,
         },
     )
@@ -538,12 +530,14 @@ def plataforma_painel(request):
         return redirect("plataforma")
 
     condominios = Condominio.objects.annotate(
-        total_unidades=Count("unidades", distinct=True),
+        total_unidades=Count("unidades", filter=Q(unidades__administrativa=False), distinct=True),
         total_locais=Count("locais", distinct=True),
         total_reservas=Count("reservas", distinct=True),
     ).order_by("nome")
     for condominio in condominios:
-        condominio.plano_sugerido = Plano.para_quantidade(condominio.total_unidades)
+        condominio.plano_sugerido = Plano.para_quantidade(
+            condominio.quantidade_unidades or condominio.total_unidades
+        )
 
     return render(
         request,
