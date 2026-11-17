@@ -61,17 +61,14 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f"Superusuário '{username}' criado."))
             return
 
-        if not opcoes["atualizar_senha"]:
-            self.stdout.write(
-                f"Superusuário '{username}' já existe. Use --atualizar-senha para "
-                "redefinir a senha."
-            )
-            return
-
         usuario.set_password(senha)
         usuario.is_staff = True
         usuario.is_superuser = True
         if email:
             usuario.email = email
         usuario.save(update_fields=["password", "is_staff", "is_superuser", "email"])
-        self.stdout.write(self.style.SUCCESS(f"Senha de '{username}' atualizada."))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Superusuário '{username}' sincronizado com as variáveis de ambiente."
+            )
+        )

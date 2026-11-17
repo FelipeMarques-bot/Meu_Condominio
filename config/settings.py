@@ -21,6 +21,15 @@ def env_list(name: str, default: str = "") -> list[str]:
     return [item.strip() for item in env(name, default).split(",") if item.strip()]
 
 
+def env_host(name: str) -> str:
+    """Aceita 'https://pub-x.r2.dev/', '//pub-x.r2.dev' ou 'pub-x.r2.dev'."""
+    valor = env(name).strip()
+    for prefixo in ("https://", "http://", "//"):
+        if valor.startswith(prefixo):
+            valor = valor[len(prefixo) :]
+    return valor.strip().strip("/")
+
+
 SECRET_KEY = env("SECRET_KEY", "dev-insecure-key-change-me")
 DEBUG = env_bool("DEBUG", True)
 
@@ -171,10 +180,10 @@ if STORAGE_S3_ATIVO:
     AWS_ACCESS_KEY_ID = env("STORAGE_S3_ACCESS_KEY")
     AWS_SECRET_ACCESS_KEY = env("STORAGE_S3_SECRET_KEY")
     AWS_STORAGE_BUCKET_NAME = STORAGE_S3_BUCKET
-    AWS_S3_ENDPOINT_URL = env("STORAGE_S3_ENDPOINT") or None
+    AWS_S3_ENDPOINT_URL = env("STORAGE_S3_ENDPOINT").strip().rstrip("/") or None
     AWS_S3_REGION_NAME = env("STORAGE_S3_REGION", "auto")
     AWS_S3_ADDRESSING_STYLE = env("STORAGE_S3_ADDRESSING_STYLE", "path")
-    AWS_S3_CUSTOM_DOMAIN = env("STORAGE_S3_PUBLIC_DOMAIN") or None
+    AWS_S3_CUSTOM_DOMAIN = env_host("STORAGE_S3_PUBLIC_DOMAIN") or None
     AWS_S3_FILE_OVERWRITE = False
     AWS_DEFAULT_ACL = None
     AWS_QUERYSTRING_AUTH = False

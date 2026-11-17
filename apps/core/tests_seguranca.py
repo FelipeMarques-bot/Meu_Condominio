@@ -137,6 +137,20 @@ class SuperusuarioPorAmbienteTests(TestCase):
 
         self.assertEqual(Usuario.objects.filter(username="dono").count(), 1)
 
+    def test_senha_do_superusuario_acompanha_o_ambiente(self):
+        Usuario.objects.create_superuser(
+            username="dono", email="", password="Senha-Antiga-2026"
+        )
+        ambiente = {
+            "DJANGO_SUPERUSER_USERNAME": "dono",
+            "DJANGO_SUPERUSER_PASSWORD": "Senha-Super-Forte-2026",
+        }
+        with patch.dict(os.environ, ambiente, clear=True):
+            call_command("garantir_superusuario", stdout=io.StringIO())
+
+        usuario = Usuario.objects.get(username="dono")
+        self.assertTrue(usuario.check_password("Senha-Super-Forte-2026"))
+
     def test_sem_variaveis_nao_cria_nada(self):
         ambiente = {
             "DJANGO_SUPERUSER_USERNAME": "",
