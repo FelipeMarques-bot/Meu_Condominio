@@ -24,7 +24,19 @@
   </p>
 
   <section class="card mt-6 p-6">
-    <dl class="grid gap-4 sm:grid-cols-2">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="pill">Modo: {{ modo }}</span>
+      <span class="pill">DEBUG: {% if debug %}ligado{% else %}desligado{% endif %}</span>
+    </div>
+
+    {% if modo == "disco local" and not debug %}
+      <div class="mt-4 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-ink">
+        <strong>Atenção:</strong> em produção o disco local é efêmero e o Django não serve
+        <code>/media/</code>. Configure o R2 (ou Cloudinary) para as imagens aparecerem.
+      </div>
+    {% endif %}
+
+    <dl class="mt-4 grid gap-4 sm:grid-cols-2">
       <div>
         <dt class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">Público (logos e fotos)</dt>
         <dd class="mt-1 break-all text-sm">{{ publico.backend }}</dd>
@@ -42,6 +54,11 @@
       <div>
         <dt class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">Domínio público</dt>
         <dd class="mt-1 break-all text-sm">{{ dominio|default:"não configurado" }}</dd>
+      </div>
+      <div class="sm:col-span-2">
+        <dt class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">URL de exemplo (logo)</dt>
+        <dd class="mt-1 break-all text-sm">{{ exemplo_url }}</dd>
+        <dd class="text-xs text-muted">Se essa URL não abrir uma imagem, o domínio público está errado ou desabilitado.</dd>
       </div>
     </dl>
     <p class="mt-4 text-xs text-muted">

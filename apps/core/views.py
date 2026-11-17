@@ -594,6 +594,18 @@ def plataforma_armazenamento(request):
             "bucket": bucket,
         }
 
+    try:
+        exemplo_url = publico.url("testes/exemplo.png")
+    except Exception as exc:
+        exemplo_url = f"{type(exc).__name__}: {exc}"
+
+    if settings.STORAGE_S3_ATIVO:
+        modo = "R2/S3"
+    elif getattr(settings, "CLOUDINARY_CLOUD_NAME", ""):
+        modo = "Cloudinary"
+    else:
+        modo = "disco local"
+
     return render(
         request,
         "core/plataforma_armazenamento.html",
@@ -602,6 +614,9 @@ def plataforma_armazenamento(request):
             "privado": resumo(privado),
             "endpoint": getattr(settings, "AWS_S3_ENDPOINT_URL", None),
             "dominio": getattr(settings, "AWS_S3_CUSTOM_DOMAIN", None),
+            "exemplo_url": exemplo_url,
+            "modo": modo,
+            "debug": settings.DEBUG,
             "usando_cloudinary": bool(getattr(settings, "CLOUDINARY_CLOUD_NAME", "")),
             "enviado": enviado,
             "erro": erro,
