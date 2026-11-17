@@ -63,7 +63,6 @@ class ConfiguracaoForm(forms.ModelForm):
             "limite_reservas_mes",
             "pix_dinamico_ativo",
             "pix_gateway",
-            "auto_confirmar_ocr",
             "pix_chave",
             "pix_beneficiario",
             "pix_cidade",
@@ -77,7 +76,6 @@ class ConfiguracaoForm(forms.ModelForm):
             "politica_prazo_analise": forms.Select(attrs=CAMPO_TEXTO),
             "pix_gateway": forms.Select(attrs=CAMPO_TEXTO),
             "pix_dinamico_ativo": forms.CheckboxInput(attrs=CAMPO_CHECKBOX),
-            "auto_confirmar_ocr": forms.CheckboxInput(attrs=CAMPO_CHECKBOX),
             "telegram_ativo": forms.CheckboxInput(attrs=CAMPO_CHECKBOX),
             "whatsapp_url": forms.URLInput(
                 attrs={**CAMPO_TEXTO, "placeholder": "https://wa.me/5511999999999"}
@@ -85,7 +83,13 @@ class ConfiguracaoForm(forms.ModelForm):
             "pix_chave": forms.TextInput(
                 attrs={**CAMPO_TEXTO, "placeholder": "e-mail, telefone, CPF/CNPJ ou aleatória"}
             ),
-            "pix_beneficiario": forms.TextInput(attrs={**CAMPO_TEXTO, "maxlength": 25}),
+            "pix_beneficiario": forms.TextInput(
+                attrs={
+                    **CAMPO_TEXTO,
+                    "maxlength": 60,
+                    "placeholder": "Nome completo do titular da conta",
+                }
+            ),
             "pix_cidade": forms.TextInput(attrs={**CAMPO_TEXTO, "maxlength": 15}),
         }
 

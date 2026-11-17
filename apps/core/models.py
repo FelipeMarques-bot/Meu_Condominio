@@ -107,20 +107,32 @@ class ConfiguracaoCondominio(models.Model):
         ABACATEPAY = "abacatepay", "AbacatePay"
 
     class PoliticaPrazo(models.TextChoices):
-        MANTER = "manter", "Manter pendente e escalar"
-        CANCELAR = "cancelar", "Cancelar e liberar o horário"
-        AUTO_CONFIRMAR_SE_VERDE = "auto_confirmar_se_verde", "Confirmar se o OCR estiver verde"
+        MANTER = "manter", "Manter pendente até a análise do síndico"
+        CANCELAR = "cancelar", "Cancelar e liberar o horário automaticamente"
+        AUTO_CONFIRMAR_SE_VERDE = (
+            "auto_confirmar_se_verde",
+            "Confirmar quando o comprovante conferir",
+        )
 
     condominio = models.OneToOneField(
         Condominio, on_delete=models.CASCADE, related_name="configuracao"
     )
     antecedencia_minima_horas = models.PositiveSmallIntegerField(default=48)
     antecedencia_maxima_dias = models.PositiveSmallIntegerField(default=90)
-    prazo_analise_horas = models.PositiveSmallIntegerField(default=24)
-    politica_prazo_analise = models.CharField(
-        max_length=30, choices=PoliticaPrazo.choices, default=PoliticaPrazo.MANTER
+    prazo_analise_horas = models.PositiveSmallIntegerField(
+        default=24,
+        help_text="Tempo que o síndico tem para analisar o comprovante.",
     )
-    horas_para_reenvio = models.PositiveSmallIntegerField(default=12)
+    politica_prazo_analise = models.CharField(
+        max_length=30,
+        choices=PoliticaPrazo.choices,
+        default=PoliticaPrazo.MANTER,
+        help_text="O que acontece quando o prazo termina sem análise.",
+    )
+    horas_para_reenvio = models.PositiveSmallIntegerField(
+        default=12,
+        help_text="Tempo que o morador tem para enviar outro comprovante.",
+    )
     limite_reservas_mes = models.PositiveSmallIntegerField(
         default=2, help_text="Use 0 para ilimitado."
     )
@@ -138,7 +150,14 @@ class ConfiguracaoCondominio(models.Model):
     )
 
     pix_chave = models.CharField(max_length=140, blank=True)
-    pix_beneficiario = models.CharField(max_length=25, blank=True)
+    pix_beneficiario = models.CharField(
+        max_length=60,
+        blank=True,
+        help_text=(
+            "Nome do titular da chave, como aparece no banco. "
+            "O QR do Pix usa os primeiros 25 caracteres por padrão."
+        ),
+    )
     pix_cidade = models.CharField(max_length=15, blank=True)
 
     whatsapp_url = models.URLField(

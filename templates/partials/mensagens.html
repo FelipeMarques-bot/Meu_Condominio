@@ -1,7 +1,7 @@
 {% if messages %}
   <div class="fixed inset-x-4 top-4 z-50 mx-auto flex w-full max-w-md flex-col gap-2" role="status" aria-live="polite">
     {% for message in messages %}
-      <div class="rounded-2xl border px-4 py-3 text-sm font-medium shadow-lg backdrop-blur
+      <div class="anim-aviso rounded-2xl border px-4 py-3 text-sm font-medium shadow-lg backdrop-blur
         {% if message.tags == 'success' %}border-ok/30 bg-ok/10 text-ink
         {% elif message.tags == 'error' %}border-danger/30 bg-danger/10 text-ink
         {% elif message.tags == 'warning' %}border-warn/30 bg-warn/10 text-ink

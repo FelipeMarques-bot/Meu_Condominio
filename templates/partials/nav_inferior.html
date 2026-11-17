@@ -8,7 +8,7 @@
   aria-label="Navegação principal"
 >
   <div class="mx-auto grid max-w-md grid-cols-4 gap-1 px-2 py-1.5">
-    <a href="{% url 'landing' %}" class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold text-muted transition active:bg-lagoon/5">
+    <a href="{% if user.is_authenticated %}{% url 'agenda' slug=condominio.slug %}{% else %}{% url 'landing' %}{% endif %}" class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold text-muted transition active:bg-lagoon/5">
       <span class="grid h-6 w-6 place-items-center transition group-hover:text-ink">
         <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
           <path d="M4 11.5 12 5l8 6.5V20h-5v-5H9v5H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
