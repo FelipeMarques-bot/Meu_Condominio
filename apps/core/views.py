@@ -282,12 +282,13 @@ def identidade(request, slug):
     if request.method == "POST" and form.is_valid():
         try:
             form.save()
-        except Exception:
+        except Exception as exc:
             logger.exception("Falha ao salvar identidade do condomínio")
+            detalhe = f"{type(exc).__name__}: {exc}"[:240]
             messages.error(
                 request,
-                "Não foi possível salvar a imagem. Confira o armazenamento "
-                "(R2/Cloudinary) e tente novamente.",
+                "Não foi possível salvar a imagem. "
+                f"Detalhe técnico: {detalhe}",
             )
         else:
             messages.success(request, "Identidade do condomínio atualizada.")
