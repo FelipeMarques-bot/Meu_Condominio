@@ -101,8 +101,8 @@
   </section>
 
   <div class="mt-6 flex flex-wrap gap-3 text-xs text-muted">
-    {% if configuracao.whatsapp_url %}
-      <a href="{{ configuracao.whatsapp_url }}" target="_blank" rel="noopener" class="font-semibold text-lagoon hover:underline">Falar com a administração no WhatsApp</a>
+    {% if configuracao.whatsapp_link %}
+      <a href="{{ configuracao.whatsapp_link }}" target="_blank" rel="noopener" class="font-semibold text-lagoon hover:underline">Falar com a administração no WhatsApp</a>
     {% endif %}
     <a href="{% url 'agenda' slug=condominio.slug %}" class="font-semibold text-lagoon hover:underline">Voltar à agenda</a>
   </div>

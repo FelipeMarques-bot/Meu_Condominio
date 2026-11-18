@@ -109,3 +109,20 @@ class PaginasTests(TestCase):
         resposta = self.client.get(reverse("agenda", kwargs={"slug": "nao-existe"}))
 
         self.assertEqual(resposta.status_code, 404)
+
+
+class WhatsAppContatoTests(TestCase):
+    def test_numero_gera_link_com_mensagem_pronta(self):
+        condominio = criar_condominio("Bela Vista", "bela-vista")
+        configuracao = ConfiguracaoCondominio.objects.get(condominio=condominio)
+        configuracao.whatsapp_numero = "(47) 99999-0000"
+
+        self.assertTrue(configuracao.whatsapp_link.startswith("https://wa.me/5547999990000"))
+        self.assertIn("text=", configuracao.whatsapp_link)
+
+    def test_link_salvo_e_usado_quando_nao_ha_numero(self):
+        condominio = criar_condominio("Bela Vista", "bela-vista")
+        configuracao = ConfiguracaoCondominio.objects.get(condominio=condominio)
+        configuracao.whatsapp_url = "https://wa.me/5511988887777"
+
+        self.assertEqual(configuracao.whatsapp_link, configuracao.whatsapp_url)

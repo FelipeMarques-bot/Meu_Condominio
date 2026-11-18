@@ -163,6 +163,14 @@ class ConfiguracaoCondominio(models.Model):
     whatsapp_url = models.URLField(
         blank=True, help_text="Link completo do WhatsApp, por exemplo https://wa.me/5511999999999."
     )
+    whatsapp_numero = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text=(
+            "Só o número com DDD. O botão abre o WhatsApp da administração "
+            "com a mensagem já escrita."
+        ),
+    )
     telegram_ativo = models.BooleanField(default=False)
     telegram_chat_id = models.CharField(max_length=64, blank=True)
 
@@ -178,6 +186,16 @@ class ConfiguracaoCondominio(models.Model):
 
     def __str__(self) -> str:
         return f"Configuração de {self.condominio.nome}"
+
+    @property
+    def whatsapp_link(self) -> str:
+        from .notifications import link_whatsapp
+
+        link = link_whatsapp(
+            self.whatsapp_numero,
+            "Olá! Falo pelo app Meu Condomínio e preciso de ajuda.",
+        )
+        return link or self.whatsapp_url
 
     @property
     def pix_gateway_api_key(self) -> str:

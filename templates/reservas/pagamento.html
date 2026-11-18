@@ -57,8 +57,8 @@
       <div class="mt-5 rounded-2xl border border-warn/30 bg-warn/10 p-4 text-sm">
         <p class="font-semibold">Pix ainda não configurado</p>
         <p class="mt-1 text-muted">{{ erro_pix }} Pague pela chave combinada com a administração e envie o comprovante abaixo.</p>
-        {% if configuracao.whatsapp_url %}
-          <a href="{{ configuracao.whatsapp_url }}" target="_blank" rel="noopener" class="mt-2 inline-flex font-semibold text-lagoon hover:underline">Falar no WhatsApp</a>
+        {% if configuracao.whatsapp_link %}
+          <a href="{{ configuracao.whatsapp_link }}" target="_blank" rel="noopener" class="mt-2 inline-flex font-semibold text-lagoon hover:underline">Falar no WhatsApp</a>
         {% endif %}
       </div>
     {% else %}

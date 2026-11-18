@@ -158,6 +158,12 @@
           {% for erro in form.whatsapp_url.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
         </div>
         <div class="sm:col-span-2">
+          <label for="{{ form.whatsapp_numero.id_for_label }}" class="text-xs font-semibold text-muted">{{ form.whatsapp_numero.label }}</label>
+          <div class="mt-1">{{ form.whatsapp_numero }}</div>
+          {% if form.whatsapp_numero.help_text %}<p class="mt-1 text-[0.7rem] text-muted">{{ form.whatsapp_numero.help_text }}</p>{% endif %}
+          {% for erro in form.whatsapp_numero.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
+        </div>
+        <div class="sm:col-span-2">
           <label class="flex items-start gap-3 text-sm">
             {{ form.telegram_ativo }}
             <span>

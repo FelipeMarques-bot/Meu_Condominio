@@ -67,6 +67,7 @@ class ConfiguracaoForm(forms.ModelForm):
             "pix_beneficiario",
             "pix_cidade",
             "whatsapp_url",
+            "whatsapp_numero",
             "telegram_ativo",
             "telegram_chat_id",
             "cor_primaria",
@@ -79,6 +80,9 @@ class ConfiguracaoForm(forms.ModelForm):
             "telegram_ativo": forms.CheckboxInput(attrs=CAMPO_CHECKBOX),
             "whatsapp_url": forms.URLInput(
                 attrs={**CAMPO_TEXTO, "placeholder": "https://wa.me/5511999999999"}
+            ),
+            "whatsapp_numero": forms.TextInput(
+                attrs={**CAMPO_TEXTO, "placeholder": "(47) 99999-0000"}
             ),
             "pix_chave": forms.TextInput(
                 attrs={**CAMPO_TEXTO, "placeholder": "e-mail, telefone, CPF/CNPJ ou aleatória"}
