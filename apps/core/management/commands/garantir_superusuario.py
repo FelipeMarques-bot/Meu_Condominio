@@ -61,12 +61,23 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f"Superusuário '{username}' criado."))
             return
 
+        usuario.username = username
         usuario.set_password(senha)
         usuario.is_staff = True
         usuario.is_superuser = True
+        usuario.is_active = True
         if email:
             usuario.email = email
-        usuario.save(update_fields=["password", "is_staff", "is_superuser", "email"])
+        usuario.save(
+            update_fields=[
+                "username",
+                "password",
+                "is_staff",
+                "is_superuser",
+                "is_active",
+                "email",
+            ]
+        )
         self.stdout.write(
             self.style.SUCCESS(
                 f"Superusuário '{username}' sincronizado com as variáveis de ambiente."

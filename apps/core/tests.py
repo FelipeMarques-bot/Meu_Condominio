@@ -126,3 +126,13 @@ class WhatsAppContatoTests(TestCase):
         configuracao.whatsapp_url = "https://wa.me/5511988887777"
 
         self.assertEqual(configuracao.whatsapp_link, configuracao.whatsapp_url)
+
+
+class AdminBrandingTests(TestCase):
+    def test_login_do_admin_usa_a_marca_da_plataforma(self):
+        resposta = self.client.get(reverse("admin:login"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Meu Condomínio")
+        self.assertContains(resposta, "Área da equipe")
+        self.assertNotContains(resposta, "Django administration")

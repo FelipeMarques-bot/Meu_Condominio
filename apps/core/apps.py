@@ -7,4 +7,10 @@ class CoreConfig(AppConfig):
     verbose_name = "Núcleo"
 
     def ready(self) -> None:
+        from django.contrib import admin
+
         from . import signals  # noqa: F401
+
+        admin.site.site_header = "Meu Condomínio"
+        admin.site.site_title = "Meu Condomínio"
+        admin.site.index_title = "Administração da plataforma"
