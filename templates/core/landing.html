@@ -25,8 +25,9 @@
       <a href="#sindico" class="transition hover:text-ink">Para síndicos</a>
     </nav>
 
+    <a href="{% url 'login' %}" class="btn btn-ghost hidden md:inline-flex">Entrar</a>
     <a href="{% url 'criar_condominio' %}" class="btn btn-primary hidden md:inline-flex">Criar condomínio</a>
-    <a href="#contato" class="btn btn-ghost hidden md:inline-flex">Falar com a gente</a>
+    <a href="#contato" class="btn btn-ghost hidden lg:inline-flex">Falar com a gente</a>
 
     <button
       type="button"
@@ -156,6 +157,7 @@
         {% if condominio_demo %}
           <a href="{% url 'agenda' slug=condominio_demo.slug %}" class="btn btn-ghost">Ver demonstração</a>
         {% endif %}
+        <a href="{% url 'login' %}" class="text-sm font-semibold text-lagoon underline-offset-4 hover:underline">Já tenho conta</a>
       </div>
 
       <p class="reveal mt-6 text-xs leading-relaxed text-muted">
