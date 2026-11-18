@@ -449,8 +449,29 @@ def unidade_editar(request, slug, pk):
             "form": form,
             "unidades": condominio.unidades.filter(administrativa=False),
             "editando": unidade,
+            "vinculos": unidade.vinculos.select_related("usuario"),
         },
     )
+
+
+@login_required
+@gestao_required
+def vinculo_remover(request, slug, pk):
+    condominio = _condominio(request)
+    if request.method != "POST":
+        raise Http404
+
+    vinculo = get_object_or_404(
+        VinculoUnidade.objects.select_related("usuario", "unidade"),
+        pk=pk,
+        unidade__condominio=condominio,
+        unidade__administrativa=False,
+    )
+    unidade = vinculo.unidade
+    nome = vinculo.usuario.get_full_name() or vinculo.usuario.username
+    vinculo.delete()
+    messages.success(request, f"{nome} foi desvinculado da {unidade.rotulo}.")
+    return redirect("unidade_editar", slug=condominio.slug, pk=unidade.pk)
 
 
 @login_required
@@ -482,6 +503,11 @@ def convites(request, slug):
         }
         for convite in lista
     ]
+    for item in itens:
+        item["mensagem"] = (
+            f"Olá! Você foi convidado para a {item['convite'].unidade.rotulo} "
+            f"do {condominio.nome}. Crie seu acesso aqui: {item['link']}"
+        )
 
     return render(
         request,
@@ -505,6 +531,13 @@ def usar_convite(request, slug, token):
 
     if request.user.is_authenticated:
         usuario = request.user
+        if request.method == "POST" and request.POST.get("acao") == "sair":
+            logout(request)
+            return redirect(
+                "usar_convite",
+                slug=condominio.slug,
+                token=convite.token,
+            )
         if VinculoUnidade.objects.filter(
             usuario=usuario, unidade=convite.unidade
         ).exists():
@@ -522,13 +555,6 @@ def usar_convite(request, slug, token):
 
         if request.method == "POST":
             acao = request.POST.get("acao")
-            if acao == "sair":
-                logout(request)
-                return redirect(
-                    "usar_convite",
-                    slug=condominio.slug,
-                    token=convite.token,
-                )
             if acao == "usar":
                 if form_telefone is not None and not form_telefone.is_valid():
                     return render(

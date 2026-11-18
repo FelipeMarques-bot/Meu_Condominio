@@ -2,7 +2,7 @@
   <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-5 py-3 sm:px-8">
     <a href="{% url 'agenda' slug=condominio.slug %}" class="flex items-center gap-3" aria-label="{{ condominio.nome }}, agenda">
       {% if condominio.logo %}
-        <img src="{{ condominio.logo.url }}" alt="" class="h-14 w-14 rounded-xl bg-white object-contain p-0.5">
+        <img src="{{ condominio.logo.url }}" alt="" class="h-14 w-auto max-w-[9rem] object-contain">
       {% else %}
         <span class="grid h-14 w-14 place-items-center rounded-xl bg-lagoon font-display text-base text-paper">{{ condominio.iniciais }}</span>
       {% endif %}

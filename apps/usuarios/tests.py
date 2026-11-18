@@ -1,4 +1,4 @@
-from datetime import timedelta
+﻿from datetime import timedelta
 
 from django.test import TestCase
 from django.urls import reverse
@@ -57,6 +57,11 @@ class ConviteAdminTests(TestCase):
         )
         self.assertEqual(convite.criado_por, self.sindico)
         self.assertTrue(convite.valido)
+
+        pagina = self.client.get(
+            reverse("convites", kwargs={"slug": self.condominio.slug})
+        )
+        self.assertContains(pagina, "Enviar por WhatsApp")
 
     def test_morador_nao_cria_convite(self):
         morador = Usuario.objects.create_user(
@@ -246,3 +251,32 @@ class LoginTests(TestCase):
 
         self.assertEqual(resposta.status_code, 302)
         self.assertIn(reverse("login"), resposta.url)
+
+
+class VinculoRemoverTests(TestCase):
+    def test_sindico_remove_vinculo_da_unidade(self):
+        condominio, unidade = criar_base()
+        sindico = criar_sindico(unidade)
+        morador = Usuario.objects.create_user(
+            username="morador", email="morador@example.com", password=SENHA
+        )
+        vinculo = VinculoUnidade.objects.create(
+            usuario=morador, unidade=unidade, papel=VinculoUnidade.Papel.MORADOR
+        )
+        self.client.force_login(sindico)
+
+        resposta = self.client.post(
+            reverse(
+                "vinculo_remover",
+                kwargs={"slug": condominio.slug, "pk": vinculo.pk},
+            )
+        )
+
+        self.assertRedirects(
+            resposta,
+            reverse(
+                "unidade_editar",
+                kwargs={"slug": condominio.slug, "pk": unidade.pk},
+            ),
+        )
+        self.assertFalse(VinculoUnidade.objects.filter(pk=vinculo.pk).exists())

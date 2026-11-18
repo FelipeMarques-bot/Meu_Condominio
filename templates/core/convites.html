@@ -61,6 +61,10 @@
                         @click="navigator.clipboard.writeText('{{ item.link|escapejs }}'); copiado = true; setTimeout(() => copiado = false, 2000)">
                   <span x-text="copiado ? 'Copiado' : 'Copiar'">Copiar</span>
                 </button>
+                {% if item.convite.valido and not item.convite.usado_em %}
+                  <a href="https://wa.me/?text={{ item.mensagem|urlencode }}" target="_blank" rel="noopener"
+                     class="btn btn-primary shrink-0 px-4 py-2">Enviar por WhatsApp</a>
+                {% endif %}
               </div>
             </li>
           {% endfor %}

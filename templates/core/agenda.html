@@ -9,7 +9,7 @@
   <aside class="hidden bg-ink px-5 py-7 text-paper lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:overflow-y-auto">
     <a href="{% url 'landing' %}" class="flex items-center gap-3" aria-label="Meu Condomínio, início">
       {% if condominio.logo %}
-        <img src="{{ condominio.logo.url }}" alt="" class="h-16 w-16 rounded-2xl bg-white object-contain p-1">
+        <img src="{{ condominio.logo.url }}" alt="" class="h-16 w-auto max-w-[10rem] object-contain">
       {% else %}
         <span class="grid h-16 w-16 place-items-center rounded-2xl bg-paper font-display text-xl text-lagoon">{{ condominio.iniciais }}</span>
       {% endif %}
@@ -95,7 +95,7 @@
       <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
         <div class="flex items-center gap-3">
           {% if condominio.logo %}
-            <img src="{{ condominio.logo.url }}" alt="" class="h-14 w-14 rounded-xl bg-white object-contain p-0.5 lg:hidden">
+            <img src="{{ condominio.logo.url }}" alt="" class="h-14 w-auto max-w-[8rem] object-contain lg:hidden">
           {% else %}
             <span class="grid h-14 w-14 place-items-center rounded-xl bg-lagoon font-display text-base text-paper lg:hidden">{{ condominio.iniciais }}</span>
           {% endif %}
