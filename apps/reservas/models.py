@@ -96,6 +96,8 @@ class Reserva(models.Model):
     pix_pago_em = models.DateTimeField(null=True, blank=True)
     codigo_checkin = models.CharField(max_length=8, blank=True)
     motivo_rejeicao = models.TextField(blank=True)
+    prazo_alertado = models.BooleanField(default=False)
+    lembrete_enviado = models.BooleanField(default=False)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 

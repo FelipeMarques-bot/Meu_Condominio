@@ -200,6 +200,14 @@ Com isso, logos e fotos usam o bucket público (`media/`), e comprovantes vão p
 
 Comprovantes continuam no disco local (ou no R2, se configurado), porque o Cloudinary entrega arquivos publicamente e não serve para documentos privados.
 
+## Notificações e prazos
+
+- **E-mail**: configure `EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` e `DEFAULT_FROM_EMAIL`. O aviso vai para o morador e para quem tem papel de síndico ou administradora (desde que o usuário tenha e-mail cadastrado).
+- **Telegram**: crie um bot com o `@BotFather`, coloque o token em `TELEGRAM_BOT_TOKEN`, adicione o bot ao grupo da administração e informe o `chat_id` em Configurações. O canal é gratuito e recebe novos pedidos, comprovantes, cancelamentos, expirações e prazos vencidos.
+- **Prazos automáticos**: defina `TAREFAS_TOKEN` e agende uma chamada diária (cron-job.org, EasyCron ou o agendador da sua hospedagem) para
+  `https://SEU-DOMINIO/tarefas/prazos/SEU-TOKEN/`. A tarefa expira reservas sem comprovante, aplica a política de prazo de análise e envia o lembrete das reservas do dia seguinte.
+- Sem `TAREFAS_TOKEN`, o endpoint responde 404 e nada roda sozinho — os prazos continuam visíveis no painel, mas sem aviso automático.
+
 ## Planos
 
 | Plano | Preço/mês | Unidades | Espaços |
@@ -216,7 +224,7 @@ Os planos ficam no banco (`Plano`), editáveis no admin, e a landing lista só o
 1. Conciliação diária de cobranças Pix (consulta à API) para eventos perdidos.
 2. Pix dinâmico com Asaas atrás do mesmo interruptor.
 3. OCR de comprovante com Tesseract, regras de validação e fila de revisão.
-4. Notificações push PWA, Telegram ativo por padrão no painel e link de WhatsApp ao morador.
+4. Notificações push PWA e envio de WhatsApp ao morador (hoje: e-mail, Telegram e avisos no app).
 5. Bloqueios por inadimplência, políticas automáticas, relatórios e assinatura do SaaS.
 
 ## Segurança

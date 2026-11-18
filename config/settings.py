@@ -225,6 +225,7 @@ CONTATO_EMAIL = env("CONTATO_EMAIL", "contato@meucondominio.com.br")
 
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN")
 TELEGRAM_TIMEOUT = int(env("TELEGRAM_TIMEOUT", "5"))
+TAREFAS_TOKEN = env("TAREFAS_TOKEN")
 
 EMAIL_BACKEND = (
     "django.core.mail.backends.console.EmailBackend"

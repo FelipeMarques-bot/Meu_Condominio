@@ -1,4 +1,5 @@
 import logging
+import secrets
 from datetime import timedelta
 from functools import wraps
 from pathlib import Path
@@ -12,7 +13,7 @@ from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.core.files.storage import storages
 from django.db import transaction
 from django.db.models import Count, Q
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -35,6 +36,7 @@ from .forms import (
     slug_condominio_unico,
 )
 from .models import Condominio, Plano
+from .notifications import emails_administradores, telegram_configurado
 from .permissoes import gestao_required
 
 logger = logging.getLogger(__name__)
@@ -78,6 +80,19 @@ def service_worker(request):
     resposta["Service-Worker-Allowed"] = "/"
     resposta["Cache-Control"] = "no-cache"
     return resposta
+
+
+def tarefas_prazos(request, token):
+    esperado = settings.TAREFAS_TOKEN
+    if not esperado or not secrets.compare_digest(token, esperado):
+        raise Http404
+    if request.method not in {"GET", "POST"}:
+        raise Http404
+
+    from apps.reservas.prazos import processar_prazos
+
+    resultado = processar_prazos()
+    return JsonResponse({"ok": True, **resultado})
 
 
 def landing(request):
@@ -289,6 +304,13 @@ def configuracoes(request, slug):
             "configuracao": configuracao,
             "form": form,
             "webhook_url": webhook_url,
+            "notificacoes": {
+                "emails_administracao": len(emails_administradores(condominio)),
+                "email_configurado": bool(settings.EMAIL_HOST),
+                "telegram_bot": bool(settings.TELEGRAM_BOT_TOKEN),
+                "telegram_ativo": telegram_configurado(condominio),
+                "agendador": bool(settings.TAREFAS_TOKEN),
+            },
         },
     )
 

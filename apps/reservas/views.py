@@ -15,7 +15,9 @@ from django.utils.formats import date_format
 from apps.core.models import ConfiguracaoCondominio
 from apps.core.notifications import (
     notificar_nova_analise,
+    notificar_reserva_cancelada,
     notificar_reserva_confirmada,
+    notificar_reserva_criada,
     notificar_reserva_rejeitada,
 )
 from apps.core.permissoes import (
@@ -117,6 +119,7 @@ def reservar(request, slug, local_slug):
                 valor=local.valor,
                 expira_em=agora + timedelta(hours=HOLD_HORAS),
             )
+            notificar_reserva_criada(reserva)
             messages.success(
                 request,
                 "Horário reservado por 2 horas. Envie o comprovante para entrar na análise.",
@@ -421,6 +424,7 @@ def cancelar_reserva(request, slug, pk):
 
     reserva.status = Reserva.Status.CANCELADA
     reserva.save(update_fields=["status", "atualizado_em"])
+    notificar_reserva_cancelada(reserva)
     messages.success(request, "Reserva cancelada.")
     return redirect("minhas_reservas", slug=condominio.slug)
 
