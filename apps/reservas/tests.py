@@ -456,7 +456,7 @@ class CalendarioTests(TestCase):
             resposta.context["calendario"]["valor"], hoje.strftime("%Y-%m")
         )
 
-    def test_reserva_de_outra_unidade_nao_aparece(self):
+    def test_reserva_de_outra_unidade_aparece_como_ocupada_sem_identidade(self):
         outra = Unidade.objects.create(
             condominio=self.condominio, bloco="C", numero="301"
         )
@@ -469,7 +469,28 @@ class CalendarioTests(TestCase):
 
         resposta = self.client.get(self._url(), {"mes": "2026-03"})
 
-        self.assertEqual(resposta.context["calendario"]["total"], 0)
+        calendario = resposta.context["calendario"]
+        self.assertEqual(calendario["total"], 1)
+        dia = next(d for d in self._dias(resposta) if d["numero"] == 12)
+        self.assertEqual(len(dia["reservas"]), 1)
+        evento = dia["reservas"][0]
+        self.assertFalse(evento["propria"])
+        self.assertEqual(evento["status"], "Ocupado")
+        self.assertNotIn("Vizinho", resposta.content.decode())
+        self.assertNotIn("301", resposta.content.decode())
+
+    def test_dia_selecionado_traz_rotulo_e_eventos(self):
+        inicio = timezone.make_aware(datetime(2026, 3, 10, 10, 0))
+        self._reserva(inicio)
+
+        resposta = self.client.get(self._url(), {"mes": "2026-03"})
+
+        dias = resposta.context["calendario"]["dias"]
+        self.assertIn("2026-03-10", dias)
+        info = dias["2026-03-10"]
+        self.assertIn("10 de março", info["rotulo"])
+        self.assertEqual(len(info["eventos"]), 1)
+        self.assertTrue(info["eventos"][0]["propria"])
 
 
 class ComprovantePrivadoTests(TestCase):

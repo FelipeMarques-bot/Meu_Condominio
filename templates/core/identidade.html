@@ -55,7 +55,7 @@
       </div>
 
       <div class="text-center">
-        <p class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">Prévia</p>
+        <p class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">Logo atual</p>
         <div class="mx-auto mt-3 grid h-24 w-24 place-items-center overflow-hidden rounded-3xl bg-sand/60">
           <img id="previa-logo" src="{% if condominio.logo %}{{ condominio.logo.url }}{% endif %}" alt="Logo do {{ condominio.nome }}" class="h-full w-full object-cover {% if not condominio.logo %}hidden{% endif %}">
           <span id="previa-iniciais" class="font-display text-2xl text-muted {% if condominio.logo %}hidden{% endif %}">{{ condominio.iniciais }}</span>

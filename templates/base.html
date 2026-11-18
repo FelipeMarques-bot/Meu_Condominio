@@ -7,6 +7,12 @@
   <title>{% block title %}{{ site_nome }}{% endblock %}</title>
   <meta name="description" content="{% block description %}Reservas de salão, quiosque e churrasqueira com Pix, análise do síndico e confirmação no celular.{% endblock %}">
   <meta name="theme-color" content="#0E4A55">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Meu Condomínio">
+  <link rel="manifest" href="{% url 'manifest' %}">
+  <link rel="apple-touch-icon" href="/static/pwa/apple-touch-icon.png">
   <meta property="og:title" content="{% block og_title %}{{ site_nome }}{% endblock %}">
   <meta property="og:description" content="Gestão de espaços para condomínios, sem planilha e sem troca de mensagens.">
   <meta property="og:type" content="website">

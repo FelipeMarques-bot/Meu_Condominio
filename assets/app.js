@@ -4,7 +4,49 @@ import Alpine from "alpinejs";
 
 window.htmx = htmx;
 window.Alpine = Alpine;
-Alpine.start();
+
+Alpine.data("calendarioDias", () => ({
+  dados: {},
+  aberto: null,
+
+  init() {
+    const fonte = document.getElementById("calendario-dados");
+    if (!fonte) return;
+    try {
+      this.dados = JSON.parse(fonte.textContent) || {};
+    } catch {
+      this.dados = {};
+    }
+  },
+
+  abrir(chave) {
+    if (!chave) return;
+    const info = this.dados[chave];
+    if (info) {
+      this.aberto = info;
+    } else {
+      const [ano, mes, dia] = chave.split("-").map(Number);
+      const data = new Date(ano, mes - 1, dia);
+      this.aberto = {
+        rotulo: new Intl.DateTimeFormat("pt-BR", {
+          weekday: "long",
+          day: "2-digit",
+          month: "long",
+        })
+          .format(data)
+          .replace(/^./, (letra) => letra.toUpperCase()),
+        eventos: [],
+      };
+    }
+    document.documentElement.classList.add("nav-aberto");
+    this.$nextTick(() => this.$refs.painel?.focus());
+  },
+
+  fechar() {
+    this.aberto = null;
+    document.documentElement.classList.remove("nav-aberto");
+  },
+}));
 
 const prefereMenosMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const revelaveis = document.querySelectorAll(".reveal");
@@ -75,3 +117,72 @@ if (!prefereMenosMovimento && elementosTilt.length) {
   window.addEventListener("scroll", agendarTilt, { passive: true });
   window.addEventListener("resize", agendarTilt);
 }
+
+const modoAplicativo =
+  window.matchMedia("(display-mode: standalone)").matches ||
+  window.matchMedia("(display-mode: fullscreen)").matches ||
+  window.navigator.standalone === true;
+
+const ehIOS =
+  /iphone|ipad|ipod/i.test(window.navigator.userAgent) ||
+  (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
+
+let conviteInstalacao = null;
+
+const blocosInstalacao = () => document.querySelectorAll("[data-instalar-bloco]");
+
+const atualizarBlocosInstalacao = () => {
+  blocosInstalacao().forEach((bloco) => {
+    bloco.hidden = modoAplicativo;
+    const botao = bloco.querySelector("[data-instalar-pwa]");
+    const dica = bloco.querySelector("[data-dica-ios]");
+    if (botao) {
+      botao.hidden = false;
+      botao.textContent = conviteInstalacao ? "Instalar aplicativo" : "Como instalar no celular";
+    }
+    if (dica) dica.hidden = !ehIOS || modoAplicativo;
+  });
+};
+
+window.addEventListener("beforeinstallprompt", (evento) => {
+  evento.preventDefault();
+  conviteInstalacao = evento;
+  atualizarBlocosInstalacao();
+});
+
+window.addEventListener("appinstalled", () => {
+  conviteInstalacao = null;
+  atualizarBlocosInstalacao();
+});
+
+document.addEventListener("click", async (evento) => {
+  const botao = evento.target.closest("[data-instalar-pwa]");
+  if (!botao) return;
+
+  if (conviteInstalacao) {
+    conviteInstalacao.prompt();
+    const escolha = await conviteInstalacao.userChoice;
+    if (escolha?.outcome === "accepted") {
+      conviteInstalacao = null;
+      atualizarBlocosInstalacao();
+    }
+    return;
+  }
+
+  const bloco = botao.closest("[data-instalar-bloco]");
+  const dica = bloco?.querySelector("[data-dica-ios]");
+  if (dica) {
+    dica.hidden = !dica.hidden;
+    if (!dica.hidden) dica.focus?.();
+  }
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}
+
+atualizarBlocosInstalacao();
+Alpine.start();
+

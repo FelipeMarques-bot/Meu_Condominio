@@ -152,7 +152,7 @@ def _mes_referencia(valor: str) -> date:
     return hoje.replace(day=1)
 
 
-def _calendario_do_mes(request, reservas):
+def _calendario_do_mes(request, condominio, unidades_ids, usuario):
     referencia = _mes_referencia(request.GET.get("mes", ""))
     proximo = (referencia + timedelta(days=32)).replace(day=1)
     anterior = (referencia - timedelta(days=1)).replace(day=1)
@@ -162,11 +162,45 @@ def _calendario_do_mes(request, reservas):
     fim_dt = timezone.make_aware(datetime.combine(proximo, time.min), fuso)
 
     por_dia: dict[int, list] = {}
-    for reserva in reservas.filter(inicio__gte=inicio_dt, inicio__lt=fim_dt):
-        dia = timezone.localtime(reserva.inicio).day
-        por_dia.setdefault(dia, []).append(reserva)
-    for lista in por_dia.values():
-        lista.sort(key=lambda reserva: reserva.inicio)
+    dias_info: dict[str, dict] = {}
+    total = 0
+
+    reservas_mes = (
+        Reserva.objects.filter(
+            condominio=condominio,
+            inicio__gte=inicio_dt,
+            inicio__lt=fim_dt,
+        )
+        .exclude(status=Reserva.Status.CANCELADA)
+        .select_related("local", "unidade")
+        .order_by("inicio")
+    )
+
+    for reserva in reservas_mes:
+        inicio_local = timezone.localtime(reserva.inicio)
+        fim_local = timezone.localtime(reserva.fim)
+        propria = (
+            reserva.solicitante_id == usuario.id
+            or reserva.unidade_id in unidades_ids
+        )
+        item = {
+            "local": reserva.local.nome,
+            "horario": f"{inicio_local:%H:%M}–{fim_local:%H:%M}",
+            "propria": propria,
+            "status": reserva.get_status_display() if propria else "Ocupado",
+            "tom": reserva.status if propria else "ocupado",
+        }
+        por_dia.setdefault(inicio_local.day, []).append(item)
+        chave = inicio_local.date().isoformat()
+        info = dias_info.setdefault(
+            chave,
+            {
+                "rotulo": date_format(inicio_local, "l, j \\d\\e F").capitalize(),
+                "eventos": [],
+            },
+        )
+        info["eventos"].append(item)
+        total += 1
 
     hoje = timezone.localdate()
     semanas = []
@@ -183,6 +217,7 @@ def _calendario_do_mes(request, reservas):
                     "no_mes": pertence,
                     "hoje": dia == hoje,
                     "reservas": por_dia.get(dia.day, []) if pertence else [],
+                    "chave": dia.isoformat() if pertence else "",
                 }
             )
         semanas.append(linha)
@@ -194,7 +229,8 @@ def _calendario_do_mes(request, reservas):
         "proximo": proximo.strftime("%Y-%m"),
         "no_mes_atual": referencia == hoje.replace(day=1),
         "semanas": semanas,
-        "total": sum(len(lista) for lista in por_dia.values()),
+        "total": total,
+        "dias": dias_info,
     }
 
 
@@ -216,7 +252,12 @@ def minhas_reservas(request, slug):
         {
             "condominio": condominio,
             "reservas": reservas,
-            "calendario": _calendario_do_mes(request, reservas),
+            "calendario": _calendario_do_mes(
+                request,
+                condominio,
+                set(unidades.values_list("id", flat=True)),
+                request.user,
+            ),
         },
     )
 

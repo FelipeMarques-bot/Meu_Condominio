@@ -2,7 +2,7 @@
 
 SaaS multi-condomínio para reserva de espaços: agenda no celular, Pix com comprovante, análise do síndico e confirmação com check-in.
 
-**Status:** Fase 2 em andamento — Fase 1 concluída (reservas, Pix manual, painel), onboarding self-service com trial de 14 dias, painel da plataforma, comprovantes em storage privado e agora Pix dinâmico com AbacatePay por condomínio.
+**Status:** reservas com Pix manual e Pix dinâmico (AbacatePay por condomínio), análise do síndico, onboarding self-service com trial de 14 dias, painel da plataforma, comprovantes em armazenamento privado e instalação como aplicativo no celular.
 
 ## O que já existe
 
@@ -22,7 +22,7 @@ SaaS multi-condomínio para reserva de espaços: agenda no celular, Pix com comp
 - Planos por tamanho do condomínio (Essencial, Conforto, Pro e Rede), com sugestão automática pela quantidade de unidades.
 - Endurecimento de segurança: rate limit de login, verificação de assinatura real dos comprovantes, cookies `HttpOnly`/`SameSite`, admin em URL configurável e auditoria (bandit + pip-audit) no CI.
 - Configuração por condomínio com prazos padrão de 48 h (antecedência) e 24 h (análise), além do interruptor do Pix automático.
-- Landing page e prévia da agenda em mobile-first, com a paleta Lagoa.
+- Landing page e agenda em mobile-first, com a paleta Lagoa.
 - Tailwind 4 + Vite, fontes self-hosted, Alpine.js, HTMX, Anime.js e Three.js (carregado só em telas grandes).
 - Seed de demonstração, testes, lint e CI no GitHub Actions.
 

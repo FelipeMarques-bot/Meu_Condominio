@@ -1,0 +1,74 @@
+<div
+  x-cloak
+  x-show="aberto"
+  x-transition.opacity.duration.150ms
+  class="fixed inset-0 z-[70] flex items-end justify-center sm:items-center"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="calendario-titulo"
+>
+  <div class="absolute inset-0 bg-ink/45 backdrop-blur-sm" @click="fechar()"></div>
+
+  <div
+    class="calendario-painel relative m-3 w-full max-w-md overflow-hidden rounded-3xl border border-line bg-white shadow-[0_40px_90px_-30px_rgba(12,27,31,0.55)]"
+    x-ref="painel"
+    tabindex="-1"
+  >
+    <div class="flex items-start justify-between gap-4 border-b border-line/70 bg-paper/70 px-5 py-4">
+      <div>
+        <p class="eyebrow">Dia selecionado</p>
+        <p id="calendario-titulo" class="mt-1 font-display text-xl leading-tight" x-text="aberto ? aberto.rotulo : ''"></p>
+      </div>
+      <button type="button" class="rounded-full p-2 text-muted transition hover:bg-white hover:text-ink" @click="fechar()" aria-label="Fechar">
+        <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="max-h-[60dvh] overflow-y-auto px-5 py-4">
+      <template x-if="aberto && aberto.eventos.length === 0">
+        <div class="rounded-2xl border border-dashed border-line bg-paper/60 px-4 py-5 text-center">
+          <p class="font-display text-xl">Dia livre</p>
+          <p class="mt-1 text-xs text-muted">Nenhum horário reservado neste dia.</p>
+        </div>
+      </template>
+
+      <ul class="space-y-2">
+        <template x-for="(evento, indice) in (aberto ? aberto.eventos : [])" :key="indice">
+          <li class="flex items-start gap-3 rounded-2xl border border-line/70 bg-paper/50 px-4 py-3">
+            <span class="calendario-ponto calendario-ponto-lg mt-1 shrink-0"
+                  :class="{
+                    'bg-ok': evento.tom === 'confirmada',
+                    'bg-lagoon': evento.tom === 'em_analise',
+                    'bg-warn': evento.tom === 'aguardando_comprovante',
+                    'bg-danger': evento.tom === 'rejeitada',
+                    'bg-muted/50': evento.tom === 'ocupado'
+                  }"></span>
+            <span class="min-w-0 flex-1">
+              <span class="flex flex-wrap items-center gap-2">
+                <span class="font-semibold" x-text="evento.local"></span>
+                <span x-show="evento.propria" class="rounded-full bg-lagoon/10 px-2 py-0.5 text-[0.6rem] font-semibold text-lagoon">Sua reserva</span>
+              </span>
+              <span class="mt-0.5 block text-xs text-muted" x-text="evento.horario"></span>
+              <span class="mt-1 block text-xs font-semibold" x-text="evento.status"></span>
+            </span>
+          </li>
+        </template>
+      </ul>
+
+      <div class="mt-4 rounded-2xl border border-line bg-paper/60 p-3">
+        <p class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">Legenda</p>
+        <ul class="mt-2 grid grid-cols-1 gap-1.5 text-[0.72rem] text-muted sm:grid-cols-2">
+          <li class="inline-flex items-center gap-2"><span class="calendario-ponto calendario-ponto-lg bg-ok"></span>Confirmada (sua reserva)</li>
+          <li class="inline-flex items-center gap-2"><span class="calendario-ponto calendario-ponto-lg bg-lagoon"></span>Em análise</li>
+          <li class="inline-flex items-center gap-2"><span class="calendario-ponto calendario-ponto-lg bg-warn"></span>Aguardando comprovante</li>
+          <li class="inline-flex items-center gap-2"><span class="calendario-ponto calendario-ponto-lg bg-danger"></span>Recusada</li>
+          <li class="inline-flex items-center gap-2"><span class="calendario-ponto calendario-ponto-lg bg-muted/50"></span>Ocupado por outro morador</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="border-t border-line/70 px-5 py-4">
+      <a href="{% url 'agenda' slug=condominio.slug %}" class="btn btn-primary w-full justify-center">Reservar um espaço</a>
+    </div>
+  </div>
+</div>

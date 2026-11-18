@@ -8,27 +8,15 @@
   aria-label="Navegação principal"
 >
   <div class="mx-auto grid max-w-md grid-cols-4 gap-1 px-2 py-1.5">
-    <a href="{% if user.is_authenticated %}{% url 'agenda' slug=condominio.slug %}{% else %}{% url 'landing' %}{% endif %}" class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold text-muted transition active:bg-lagoon/5">
-      <span class="grid h-6 w-6 place-items-center transition group-hover:text-ink">
+    <a href="{% if user.is_authenticated %}{% url 'agenda' slug=condominio.slug %}{% else %}{% url 'landing' %}{% endif %}"
+       {% if rota == 'agenda' %}aria-current="page"{% endif %}
+       class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold transition active:bg-lagoon/5 {% if rota == 'agenda' %}text-lagoon{% else %}text-muted{% endif %}">
+      <span class="grid h-6 w-6 place-items-center rounded-lg transition {% if rota == 'agenda' %}bg-lagoon/10{% endif %}">
         <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
           <path d="M4 11.5 12 5l8 6.5V20h-5v-5H9v5H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
         </svg>
       </span>
       Início
-    </a>
-
-    <a
-      href="{% url 'agenda' slug=condominio.slug %}"
-      {% if rota == 'agenda' %}aria-current="page"{% endif %}
-      class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold transition active:bg-lagoon/5 {% if rota == 'agenda' %}text-lagoon{% else %}text-muted{% endif %}"
-    >
-      <span class="grid h-6 w-6 place-items-center rounded-lg transition {% if rota == 'agenda' %}bg-lagoon/10{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
-          <rect x="4" y="5" width="16" height="15" rx="2.5" stroke="currentColor" stroke-width="1.6"/>
-          <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-      </span>
-      Agenda
     </a>
 
     {% if rota == 'minhas_reservas' or rota == 'reserva_detalhe' or rota == 'reservar' or rota == 'pagamento' %}
@@ -58,6 +46,51 @@
       </span>
       Reservas
     </a>
+    {% endif %}
+
+    {% if pode_aprovar %}
+      <a href="{% url 'painel' slug=condominio.slug %}"
+         {% if rota == 'painel' or rota == 'analise' %}aria-current="page"{% endif %}
+         class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold transition active:bg-lagoon/5 {% if rota == 'painel' or rota == 'analise' %}text-lagoon{% else %}text-muted{% endif %}">
+        <span class="grid h-6 w-6 place-items-center rounded-lg transition {% if rota == 'painel' or rota == 'analise' %}bg-lagoon/10{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+            <path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </span>
+        Painel
+      </a>
+    {% elif pode_gerir %}
+      <a href="{% url 'gestao' slug=condominio.slug %}"
+         {% if rota == 'gestao' %}aria-current="page"{% endif %}
+         class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold transition active:bg-lagoon/5 {% if rota == 'gestao' %}text-lagoon{% else %}text-muted{% endif %}">
+        <span class="grid h-6 w-6 place-items-center rounded-lg transition {% if rota == 'gestao' %}bg-lagoon/10{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </span>
+        Gestão
+      </a>
+    {% elif user.is_authenticated %}
+      <a href="{% url 'minha_conta' slug=condominio.slug %}"
+         class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold text-muted transition active:bg-lagoon/5">
+        <span class="grid h-6 w-6 place-items-center rounded-lg transition group-hover:text-ink">
+          <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+            <circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M5 20c.7-3.3 3.3-5 7-5s6.3 1.7 7 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </span>
+        Conta
+      </a>
+    {% else %}
+      <a href="{% url 'login' %}"
+         class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold text-muted transition active:bg-lagoon/5">
+        <span class="grid h-6 w-6 place-items-center rounded-lg transition group-hover:text-ink">
+          <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+            <path d="M10 17l5-5-5-5M15 12H3M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        Entrar
+      </a>
     {% endif %}
 
     <button
@@ -161,6 +194,19 @@
             </svg>
           </a>
         {% endif %}
+        <div data-instalar-bloco class="mt-4 rounded-2xl border border-lagoon/20 bg-lagoon/5 p-4">
+          <p class="text-sm font-semibold text-ink">Use como aplicativo</p>
+          <p class="mt-1 text-xs leading-relaxed text-muted">
+            Atalho na tela inicial, tela cheia e abertura mais rápida.
+          </p>
+          <button type="button" data-instalar-pwa class="btn btn-primary mt-3 w-full justify-center">
+            Instalar no celular
+          </button>
+          <p data-dica-ios hidden class="mt-2 text-[0.7rem] leading-relaxed text-muted">
+            No iPhone ou iPad: toque em Compartilhar e escolha “Adicionar à Tela de Início”.
+          </p>
+        </div>
+
         <a href="{% url 'landing' %}" class="flex items-center justify-between rounded-xl px-3 py-3 text-sm font-semibold text-ink transition hover:bg-white/70">
           Início do site
           <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4 text-muted" aria-hidden="true">

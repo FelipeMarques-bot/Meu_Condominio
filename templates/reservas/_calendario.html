@@ -3,10 +3,14 @@
     <div>
       <p class="eyebrow">Calendário</p>
       <h2 class="mt-1 font-hand text-3xl leading-none text-lagoon sm:text-4xl">{{ calendario.titulo }}</h2>
+      <p class="mt-2 max-w-md text-xs leading-relaxed text-muted">
+        Toque em um dia para ver os horários. Reservas de outros moradores aparecem como
+        <strong class="font-semibold text-ink">ocupado</strong>, sem nome nem unidade.
+      </p>
     </div>
 
     <div class="flex flex-1 items-center justify-end gap-2 sm:flex-none">
-      <a href="?mes={{ calendario.anterior }}" class="grid h-11 w-11 place-items-center sm:h-9 sm:w-9 rounded-full border border-line bg-white/70 text-muted transition hover:border-lagoon/40 hover:text-ink" aria-label="Mês anterior">
+      <a href="?mes={{ calendario.anterior }}" class="grid h-11 w-11 place-items-center rounded-full border border-line bg-white/70 text-muted transition hover:border-lagoon/40 hover:text-ink sm:h-9 sm:w-9" aria-label="Mês anterior">
         <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true"><path d="M12 5 7 10l5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
       <form method="get" class="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
@@ -16,7 +20,7 @@
                onchange="this.form.submit()">
         <noscript><button type="submit" class="btn btn-ghost px-3 py-2 text-xs">Ver</button></noscript>
       </form>
-      <a href="?mes={{ calendario.proximo }}" class="grid h-11 w-11 place-items-center sm:h-9 sm:w-9 rounded-full border border-line bg-white/70 text-muted transition hover:border-lagoon/40 hover:text-ink" aria-label="Próximo mês">
+      <a href="?mes={{ calendario.proximo }}" class="grid h-11 w-11 place-items-center rounded-full border border-line bg-white/70 text-muted transition hover:border-lagoon/40 hover:text-ink sm:h-9 sm:w-9" aria-label="Próximo mês">
         <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true"><path d="M8 5l5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
       {% if not calendario.no_mes_atual %}
@@ -41,37 +45,41 @@
     <div class="grid grid-cols-7 border-t border-l border-line/40">
       {% for semana in calendario.semanas %}
         {% for dia in semana %}
-          <div class="calendario-dia {% if not dia.no_mes %}calendario-fora{% endif %} {% if dia.hoje %}calendario-hoje{% endif %}"
-               {% if dia.reservas %}aria-label="{{ dia.numero }}: {{ dia.reservas|length }} reserva(s)"{% endif %}>
+          <button
+            type="button"
+            class="calendario-dia {% if not dia.no_mes %}calendario-fora{% endif %} {% if dia.hoje %}calendario-hoje{% endif %}"
+            {% if dia.no_mes %}@click="abrir('{{ dia.chave }}')"{% else %}disabled aria-hidden="true" tabindex="-1"{% endif %}
+            {% if dia.reservas %}aria-label="{{ dia.numero }}: {{ dia.reservas|length }} reserva{{ dia.reservas|length|pluralize }}, toque para ver"{% else %}aria-label="{{ dia.numero }}: dia livre"{% endif %}
+          >
             <span class="calendario-numero {% if not dia.no_mes %}text-muted/30{% endif %}">{{ dia.numero }}</span>
 
             {% if dia.reservas %}
               <span class="mt-1 flex flex-wrap gap-1 sm:hidden" aria-hidden="true">
-                {% for reserva in dia.reservas %}
+                {% for item in dia.reservas %}
                   <span class="calendario-ponto
-                    {% if reserva.status == 'confirmada' %}bg-ok
-                    {% elif reserva.status == 'em_analise' %}bg-lagoon
-                    {% elif reserva.status == 'aguardando_comprovante' %}bg-warn
-                    {% elif reserva.status == 'rejeitada' %}bg-danger
+                    {% if item.tom == 'confirmada' %}bg-ok
+                    {% elif item.tom == 'em_analise' %}bg-lagoon
+                    {% elif item.tom == 'aguardando_comprovante' %}bg-warn
+                    {% elif item.tom == 'rejeitada' %}bg-danger
                     {% else %}bg-muted/50{% endif %}"></span>
                 {% endfor %}
               </span>
 
               <div class="hidden sm:block">
-                {% for reserva in dia.reservas %}
+                {% for item in dia.reservas %}
                   <p class="calendario-anotacao
-                    {% if reserva.status == 'confirmada' %}text-ok
-                    {% elif reserva.status == 'em_analise' %}text-lagoon
-                    {% elif reserva.status == 'aguardando_comprovante' %}text-warn
-                    {% elif reserva.status == 'rejeitada' %}text-danger
+                    {% if item.tom == 'confirmada' %}text-ok
+                    {% elif item.tom == 'em_analise' %}text-lagoon
+                    {% elif item.tom == 'aguardando_comprovante' %}text-warn
+                    {% elif item.tom == 'rejeitada' %}text-danger
                     {% else %}text-muted{% endif %}">
-                    <span class="block truncate">{{ reserva.local.nome|truncatechars:18 }}</span>
-                    <span class="block text-[0.72rem] opacity-70">{{ reserva.inicio|time:"H:i" }}–{{ reserva.fim|time:"H:i" }}</span>
+                    <span class="block truncate">{{ item.local|truncatechars:18 }}</span>
+                    <span class="block text-[0.72rem] opacity-70">{{ item.horario }}{% if not item.propria %} · ocupado{% endif %}</span>
                   </p>
                 {% endfor %}
               </div>
             {% endif %}
-          </div>
+          </button>
         {% endfor %}
       {% endfor %}
     </div>
@@ -79,11 +87,12 @@
 
   <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted">
     {% if calendario.total %}
-      <div class="flex flex-wrap items-center gap-4">
-        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto bg-ok"></span>Confirmada</span>
-        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto bg-lagoon"></span>Em análise</span>
-        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto bg-warn"></span>Aguardando comprovante</span>
-        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto bg-danger"></span>Recusada</span>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto calendario-ponto-lg bg-ok"></span>Confirmada</span>
+        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto calendario-ponto-lg bg-lagoon"></span>Em análise</span>
+        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto calendario-ponto-lg bg-warn"></span>Aguardando comprovante</span>
+        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto calendario-ponto-lg bg-danger"></span>Recusada</span>
+        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto calendario-ponto-lg bg-muted/50"></span>Ocupado por outro morador</span>
       </div>
       <span>{{ calendario.total }} reserva{{ calendario.total|pluralize }} no mês</span>
     {% else %}
@@ -91,4 +100,6 @@
       <a href="{% url 'agenda' slug=condominio.slug %}" class="font-semibold text-lagoon hover:underline">Escolher um espaço</a>
     {% endif %}
   </div>
+
+  {{ calendario.dias|json_script:"calendario-dados" }}
 </section>

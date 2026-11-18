@@ -32,7 +32,7 @@
     {% if modo == "disco local" and not debug %}
       <div class="mt-4 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-ink">
         <strong>Atenção:</strong> em produção o disco local é efêmero e o Django não serve
-        <code>/media/</code>. Configure o R2 (ou Cloudinary) para as imagens aparecerem.
+        <code>/media/</code>. Configure o armazenamento em nuvem para as imagens aparecerem.
       </div>
     {% endif %}
 
@@ -62,7 +62,7 @@
       </div>
     </dl>
     <p class="mt-4 text-xs text-muted">
-      Cloudinary: {% if usando_cloudinary %}ativo{% else %}inativo{% endif %} · prioridade R2 &gt; Cloudinary &gt; disco local
+      Cloudinary: {% if usando_cloudinary %}ativo{% else %}inativo{% endif %} · prioridade nuvem S3 &gt; Cloudinary &gt; disco local
     </p>
   </section>
 

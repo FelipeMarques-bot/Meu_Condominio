@@ -5,6 +5,8 @@ from . import views
 
 urlpatterns = [
     path("", views.landing, name="landing"),
+    path("manifest.webmanifest", views.manifest, name="manifest"),
+    path("sw.js", views.service_worker, name="service_worker"),
     path("criar/", views.criar_condominio, name="criar_condominio"),
     path("entrar/", views.EntrarView.as_view(), name="login"),
     path("sair/", auth_views.LogoutView.as_view(), name="logout"),

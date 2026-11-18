@@ -15,7 +15,10 @@
     <a href="{% url 'agenda' slug=condominio.slug %}" class="btn btn-primary w-fit">Nova reserva</a>
   </div>
 
-  {% include "reservas/_calendario.html" %}
+  <div class="sem-anim" x-data="calendarioDias()" @keydown.escape.window="fechar()">
+    {% include "reservas/_calendario.html" %}
+    {% include "reservas/_calendario_modal.html" %}
+  </div>
 
   <h2 class="mt-10 font-display text-2xl">Todas as reservas</h2>
   {% if reservas %}

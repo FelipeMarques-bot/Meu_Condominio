@@ -37,6 +37,14 @@
     outline: 2px solid var(--color-clay);
     outline-offset: 3px;
   }
+
+  @media (max-width: 639px) {
+    input,
+    select,
+    textarea {
+      font-size: 1rem;
+    }
+  }
 }
 
 @layer components {
@@ -98,7 +106,23 @@
   }
 
   .calendario-dia {
-    @apply relative min-h-[4.9rem] border-b border-r border-line/60 p-1.5 sm:min-h-[6.4rem] sm:p-2;
+    @apply relative min-h-[4.9rem] w-full border-b border-r border-line/60 p-1.5 text-left sm:min-h-[6.4rem] sm:p-2;
+  }
+
+  .calendario-dia:enabled {
+    @apply cursor-pointer transition;
+  }
+
+  .calendario-dia:enabled:hover {
+    background-color: color-mix(in srgb, var(--color-lagoon) 5%, transparent);
+  }
+
+  .calendario-dia:enabled:active {
+    background-color: color-mix(in srgb, var(--color-lagoon) 11%, transparent);
+  }
+
+  .calendario-dia:disabled {
+    cursor: default;
   }
 
   .calendario-dia:nth-child(7n) {
@@ -134,7 +158,33 @@
   }
 
   .calendario-ponto {
-    @apply inline-block h-1.5 w-1.5 rounded-full;
+    @apply inline-block h-2 w-2 shrink-0 rounded-full;
+  }
+
+  .calendario-ponto-lg {
+    @apply h-2.5 w-2.5;
+  }
+}
+
+@keyframes calendario-abrir {
+  from {
+    opacity: 0;
+    transform: perspective(900px) rotateX(12deg) translateY(22px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(900px) rotateX(0deg) translateY(0) scale(1);
+  }
+}
+
+@layer components {
+  main#conteudo > .sem-anim {
+    animation: none;
+  }
+
+  .calendario-painel {
+    transform-origin: bottom center;
+    animation: calendario-abrir 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 }
 

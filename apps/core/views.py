@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 from functools import wraps
+from pathlib import Path
 from uuid import uuid4
 
 from django.conf import settings
@@ -11,6 +12,7 @@ from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.core.files.storage import storages
 from django.db import transaction
 from django.db.models import Count, Q
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -56,6 +58,26 @@ def _slug_unico(condominio, nome: str, ignorar=None) -> str:
         slug = f"{base}-{numero}"
         numero += 1
     return slug
+
+
+def _arquivo_pwa(nome: str, content_type: str):
+    caminho = Path(settings.BASE_DIR) / "static" / "pwa" / nome
+    if not caminho.exists():
+        raise Http404("Arquivo do aplicativo não encontrado.")
+    return FileResponse(caminho.open("rb"), content_type=content_type)
+
+
+def manifest(request):
+    resposta = _arquivo_pwa("manifest.webmanifest", "application/manifest+json")
+    resposta["Cache-Control"] = "public, max-age=3600"
+    return resposta
+
+
+def service_worker(request):
+    resposta = _arquivo_pwa("sw.js", "application/javascript")
+    resposta["Service-Worker-Allowed"] = "/"
+    resposta["Cache-Control"] = "no-cache"
+    return resposta
 
 
 def landing(request):
