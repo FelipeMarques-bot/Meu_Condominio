@@ -8,7 +8,7 @@
   aria-label="Navegação principal"
 >
   <div class="mx-auto grid max-w-md grid-cols-4 gap-1 px-2 py-1.5">
-    <a href="{% if user.is_authenticated %}{% url 'agenda' slug=condominio.slug %}{% else %}{% url 'landing' %}{% endif %}"
+    <a href="{% url 'agenda' slug=condominio.slug %}"
        {% if rota == 'agenda' %}aria-current="page"{% endif %}
        class="group flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.62rem] font-semibold transition active:bg-lagoon/5 {% if rota == 'agenda' %}text-lagoon{% else %}text-muted{% endif %}">
       <span class="grid h-6 w-6 place-items-center rounded-lg transition {% if rota == 'agenda' %}bg-lagoon/10{% endif %}">
@@ -16,7 +16,7 @@
           <path d="M4 11.5 12 5l8 6.5V20h-5v-5H9v5H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
         </svg>
       </span>
-      Início
+      Agenda
     </a>
 
     {% if rota == 'minhas_reservas' or rota == 'reserva_detalhe' or rota == 'reservar' or rota == 'pagamento' %}

@@ -101,7 +101,7 @@ class ConvitePublicoTests(TestCase):
                 "nome": "Ana Souza",
                 "username": "ana",
                 "email": "ana@example.com",
-                "telefone": "",
+                "telefone": "(47) 99999-0000",
                 "senha": SENHA,
                 "confirmar_senha": SENHA,
             },
@@ -114,6 +114,7 @@ class ConvitePublicoTests(TestCase):
             fetch_redirect_response=False,
         )
         self.assertEqual(usuario.first_name, "Ana Souza")
+        self.assertEqual(usuario.telefone, "(47) 99999-0000")
         self.assertTrue(
             VinculoUnidade.objects.filter(
                 usuario=usuario, unidade=self.unidade, ativo=True
@@ -140,13 +141,23 @@ class ConvitePublicoTests(TestCase):
 
         self.assertContains(resposta, "não pode mais ser usado")
 
-    def test_usuario_logado_apenas_vincula_unidade(self):
+    def test_usuario_logado_confirma_antes_de_vincular(self):
         usuario = Usuario.objects.create_user(
             username="carlos", email="carlos@example.com", password=SENHA
         )
+        usuario.telefone = "(47) 98888-7777"
+        usuario.save(update_fields=["telefone"])
         self.client.force_login(usuario)
 
         resposta = self.client.get(self._url())
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Sou eu, vincular esta unidade")
+        self.assertFalse(
+            VinculoUnidade.objects.filter(usuario=usuario).exists()
+        )
+
+        resposta = self.client.post(self._url(), {"acao": "usar"})
 
         self.assertRedirects(
             resposta,
@@ -160,6 +171,51 @@ class ConvitePublicoTests(TestCase):
         )
         self.convite.refresh_from_db()
         self.assertEqual(self.convite.usado_por, usuario)
+
+    def test_usuario_sem_telefone_precisa_informar_antes(self):
+        usuario = Usuario.objects.create_user(
+            username="carlos", email="carlos@example.com", password=SENHA
+        )
+        self.client.force_login(usuario)
+
+        resposta = self.client.get(self._url())
+        self.assertContains(resposta, "Falta o celular na sua conta")
+
+        resposta = self.client.post(self._url(), {"acao": "usar"})
+        self.assertContains(resposta, "Este campo é obrigatório")
+        self.assertFalse(
+            VinculoUnidade.objects.filter(usuario=usuario).exists()
+        )
+
+        resposta = self.client.post(
+            self._url(),
+            {"acao": "usar", "telefone": "(47) 98888-7777"},
+        )
+        self.assertRedirects(
+            resposta,
+            reverse("agenda", kwargs={"slug": self.condominio.slug}),
+            fetch_redirect_response=False,
+        )
+        usuario.refresh_from_db()
+        self.assertEqual(usuario.telefone, "(47) 98888-7777")
+        self.assertTrue(
+            VinculoUnidade.objects.filter(
+                usuario=usuario, unidade=self.unidade, ativo=True
+            ).exists()
+        )
+
+    def test_sair_do_convite_encerra_a_sessao(self):
+        usuario = Usuario.objects.create_user(
+            username="carlos", email="carlos@example.com", password=SENHA
+        )
+        usuario.telefone = "(47) 98888-7777"
+        usuario.save(update_fields=["telefone"])
+        self.client.force_login(usuario)
+
+        resposta = self.client.post(self._url(), {"acao": "sair"})
+
+        self.assertRedirects(resposta, self._url(), fetch_redirect_response=False)
+        self.assertNotIn("_auth_user_id", self.client.session)
 
 
 class LoginTests(TestCase):

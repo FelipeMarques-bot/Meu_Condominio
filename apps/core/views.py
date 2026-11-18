@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.core.files.storage import storages
@@ -21,7 +21,7 @@ from django.utils.text import slugify
 
 from apps.core.storage import armazenamento_privado
 from apps.reservas.models import Local
-from apps.usuarios.forms import CadastroConviteForm, ConviteForm
+from apps.usuarios.forms import CadastroConviteForm, ConviteForm, TelefoneForm
 from apps.usuarios.models import Convite, Unidade, Usuario, VinculoUnidade
 
 from .forms import (
@@ -504,21 +504,72 @@ def usar_convite(request, slug, token):
         )
 
     if request.user.is_authenticated:
-        VinculoUnidade.objects.get_or_create(
-            usuario=request.user,
-            unidade=convite.unidade,
-            papel=convite.papel,
-            defaults={"ativo": True},
-        )
-        convite.usado_em = timezone.now()
-        convite.usado_por = request.user
-        convite.save(update_fields=["usado_em", "usado_por"])
-        nome = request.user.first_name or request.user.username
-        messages.success(
+        usuario = request.user
+        if VinculoUnidade.objects.filter(
+            usuario=usuario, unidade=convite.unidade
+        ).exists():
+            return render(
+                request,
+                "core/convite.html",
+                {"condominio": condominio, "convite": convite, "ja_vinculado": True},
+            )
+
+        form_telefone = None
+        if not usuario.telefone:
+            form_telefone = TelefoneForm(
+                request.POST if request.method == "POST" else None
+            )
+
+        if request.method == "POST":
+            acao = request.POST.get("acao")
+            if acao == "sair":
+                logout(request)
+                return redirect(
+                    "usar_convite",
+                    slug=condominio.slug,
+                    token=convite.token,
+                )
+            if acao == "usar":
+                if form_telefone is not None and not form_telefone.is_valid():
+                    return render(
+                        request,
+                        "core/convite.html",
+                        {
+                            "condominio": condominio,
+                            "convite": convite,
+                            "confirmar": True,
+                            "form_telefone": form_telefone,
+                        },
+                    )
+                if form_telefone is not None:
+                    usuario.telefone = form_telefone.cleaned_data["telefone"]
+                    usuario.save(update_fields=["telefone"])
+                VinculoUnidade.objects.get_or_create(
+                    usuario=usuario,
+                    unidade=convite.unidade,
+                    papel=convite.papel,
+                    defaults={"ativo": True},
+                )
+                convite.usado_em = timezone.now()
+                convite.usado_por = usuario
+                convite.save(update_fields=["usado_em", "usado_por"])
+                nome = usuario.first_name or usuario.username
+                messages.success(
+                    request,
+                    f"Pronto, {nome}! Seu vínculo com o {condominio.nome} está ativo.",
+                )
+                return redirect("agenda", slug=condominio.slug)
+
+        return render(
             request,
-            f"Pronto, {nome}! Seu vínculo com o {condominio.nome} está ativo.",
+            "core/convite.html",
+            {
+                "condominio": condominio,
+                "convite": convite,
+                "confirmar": True,
+                "form_telefone": form_telefone,
+            },
         )
-        return redirect("agenda", slug=condominio.slug)
 
     form = CadastroConviteForm(request.POST or None)
     if request.method == "POST" and form.is_valid():

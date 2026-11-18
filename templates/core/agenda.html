@@ -9,23 +9,17 @@
   <aside class="hidden bg-ink px-5 py-7 text-paper lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:overflow-y-auto">
     <a href="{% url 'landing' %}" class="flex items-center gap-3" aria-label="Meu Condomínio, início">
       {% if condominio.logo %}
-        <img src="{{ condominio.logo.url }}" alt="" class="h-9 w-9 rounded-xl object-cover">
+        <img src="{{ condominio.logo.url }}" alt="" class="h-16 w-16 rounded-2xl bg-white object-contain p-1">
       {% else %}
-        <span class="grid h-9 w-9 place-items-center rounded-xl bg-paper font-display text-sm text-lagoon">{{ condominio.iniciais }}</span>
+        <span class="grid h-16 w-16 place-items-center rounded-2xl bg-paper font-display text-xl text-lagoon">{{ condominio.iniciais }}</span>
       {% endif %}
-      <span class="leading-tight">
+      <span class="min-w-0 leading-tight">
         <span class="block text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-paper/50">Meu Condomínio</span>
-        <span class="block font-display text-base">Gestão de espaços</span>
+        <span class="block max-w-[9rem] truncate font-display text-base">{{ condominio.nome }}</span>
       </span>
     </a>
 
     <nav class="mt-12 space-y-1" aria-label="Menu do condomínio">
-      <a href="{% url 'agenda' slug=condominio.slug %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-paper/60 transition hover:bg-paper/5 hover:text-paper">
-        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
-          <path d="M4 11.5 12 5l8 6.5V20h-5v-5H9v5H4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-        </svg>
-        Início
-      </a>
       <a href="{% url 'agenda' slug=condominio.slug %}" class="flex items-center gap-3 rounded-xl bg-paper/10 px-3 py-2.5 text-sm font-semibold text-paper" aria-current="page">
         <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
           <rect x="4" y="5" width="16" height="15" rx="2.5" stroke="currentColor" stroke-width="1.5"/>
@@ -101,9 +95,9 @@
       <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
         <div class="flex items-center gap-3">
           {% if condominio.logo %}
-            <img src="{{ condominio.logo.url }}" alt="" class="h-9 w-9 rounded-xl object-cover lg:hidden">
+            <img src="{{ condominio.logo.url }}" alt="" class="h-14 w-14 rounded-xl bg-white object-contain p-0.5 lg:hidden">
           {% else %}
-            <span class="grid h-9 w-9 place-items-center rounded-xl bg-lagoon font-display text-sm text-paper lg:hidden">{{ condominio.iniciais }}</span>
+            <span class="grid h-14 w-14 place-items-center rounded-xl bg-lagoon font-display text-base text-paper lg:hidden">{{ condominio.iniciais }}</span>
           {% endif %}
           <div>
             <p class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">{{ condominio.nome }}</p>
