@@ -103,6 +103,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.middleware.TenantMiddleware",
+    "apps.core.agendador.AgendadorMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -226,6 +227,7 @@ CONTATO_EMAIL = env("CONTATO_EMAIL", "contato@meucondominio.com.br")
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN")
 TELEGRAM_TIMEOUT = int(env("TELEGRAM_TIMEOUT", "5"))
 TAREFAS_TOKEN = env("TAREFAS_TOKEN")
+AGENDADOR_INTERNO = env_bool("AGENDADOR_INTERNO", not DEBUG)
 
 EMAIL_BACKEND = (
     "django.core.mail.backends.console.EmailBackend"
@@ -252,3 +254,4 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     X_FRAME_OPTIONS = "DENY"
+

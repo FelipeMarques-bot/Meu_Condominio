@@ -93,6 +93,27 @@
     </aside>
   </div>
 
+  <section class="card mt-6 p-5">
+    <p class="font-display text-xl">Sem vaga nesse dia?</p>
+    <p class="mt-1 text-xs leading-relaxed text-muted">
+      Entre na lista de espera e avisamos por e-mail se um horário for liberado.
+    </p>
+    <form method="post" action="{% url 'entrar_na_espera' slug=condominio.slug local_slug=local.slug %}" class="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+      {% csrf_token %}
+      <div>
+        <label for="espera-data" class="text-xs font-semibold text-muted">Data</label>
+        <input id="espera-data" type="date" name="data" required class="field mt-1">
+      </div>
+      <div>
+        <label for="espera-unidade" class="text-xs font-semibold text-muted">Unidade</label>
+        <select id="espera-unidade" name="unidade" class="field mt-1" required>
+          {% for unidade in unidades %}<option value="{{ unidade.pk }}">{{ unidade.rotulo }}</option>{% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-ghost">Entrar na lista</button>
+    </form>
+  </section>
+
   <div class="fixed inset-x-0 bottom-[calc(4.35rem+env(safe-area-inset-bottom))] z-20 border-t border-line/80 bg-paper/95 px-4 py-3 backdrop-blur lg:hidden">
     <div class="mx-auto flex max-w-md items-center gap-4">
       <div class="shrink-0">

@@ -1,0 +1,226 @@
+from datetime import timedelta
+
+from django.core import mail
+from django.test import TestCase, override_settings
+from django.urls import reverse
+from django.utils import timezone
+
+from apps.core.notifications import link_whatsapp
+
+from .models import ListaEspera, Reserva
+from .prazos import processar_prazos
+from .tests import criar_base, criar_morador, criar_reserva, criar_sindico
+
+BACKEND_EMAIL = "django.core.mail.backends.locmem.EmailBackend"
+
+
+@override_settings(EMAIL_BACKEND=BACKEND_EMAIL)
+class ListaEsperaTests(TestCase):
+    def setUp(self):
+        self.condominio, self.local, self.unidade = criar_base()
+        self.morador = criar_morador(self.unidade)
+        self.sindico = criar_sindico(self.condominio, self.unidade)
+
+    def _entrar(self, data):
+        return self.client.post(
+            reverse(
+                "entrar_na_espera",
+                kwargs={"slug": self.condominio.slug, "local_slug": self.local.slug},
+            ),
+            {"data": data.strftime("%Y-%m-%d"), "unidade": self.unidade.pk},
+        )
+
+    def test_morador_entra_na_lista(self):
+        self.client.force_login(self.morador)
+        amanha = timezone.localdate() + timedelta(days=1)
+
+        self._entrar(amanha)
+
+        entrada = ListaEspera.objects.get()
+        self.assertEqual(entrada.data, amanha)
+        self.assertEqual(entrada.solicitante, self.morador)
+        self.assertEqual(entrada.status, ListaEspera.Status.AGUARDANDO)
+
+    def test_data_passada_e_recusada(self):
+        self.client.force_login(self.morador)
+        ontem = timezone.localdate() - timedelta(days=1)
+
+        self._entrar(ontem)
+
+        self.assertFalse(ListaEspera.objects.exists())
+
+    def test_morador_sai_da_lista(self):
+        self.client.force_login(self.morador)
+        entrada = ListaEspera.objects.create(
+            condominio=self.condominio,
+            local=self.local,
+            unidade=self.unidade,
+            solicitante=self.morador,
+            data=timezone.localdate() + timedelta(days=2),
+        )
+
+        self.client.post(
+            reverse(
+                "cancelar_espera",
+                kwargs={"slug": self.condominio.slug, "pk": entrada.pk},
+            )
+        )
+
+        entrada.refresh_from_db()
+        self.assertEqual(entrada.status, ListaEspera.Status.CANCELADO)
+
+    def test_cancelamento_avisa_quem_espera(self):
+        entrada = ListaEspera.objects.create(
+            condominio=self.condominio,
+            local=self.local,
+            unidade=self.unidade,
+            solicitante=self.morador,
+            data=timezone.localtime().date() + timedelta(days=3),
+        )
+        reserva = criar_reserva(
+            self.condominio, self.local, self.unidade, self.sindico
+        )
+        entrada.data = timezone.localtime(reserva.inicio).date()
+        entrada.save(update_fields=["data"])
+        self.client.force_login(self.morador)
+        mail.outbox.clear()
+
+        self.client.post(
+            reverse(
+                "cancelar_reserva",
+                kwargs={"slug": self.condominio.slug, "pk": reserva.pk},
+            )
+        )
+
+        entrada.refresh_from_db()
+        self.assertEqual(entrada.status, ListaEspera.Status.AVISADO)
+        assuntos = [mensagem.subject for mensagem in mail.outbox]
+        self.assertTrue(any("Vaga liberada" in assunto for assunto in assuntos))
+
+    def test_expiracao_avisa_quem_espera(self):
+        entrada = ListaEspera.objects.create(
+            condominio=self.condominio,
+            local=self.local,
+            unidade=self.unidade,
+            solicitante=self.morador,
+            data=timezone.localtime().date() + timedelta(days=3),
+        )
+        reserva = criar_reserva(
+            self.condominio, self.local, self.unidade, self.sindico
+        )
+        entrada.data = timezone.localtime(reserva.inicio).date()
+        entrada.save(update_fields=["data"])
+        reserva.expira_em = timezone.now() - timedelta(minutes=1)
+        reserva.save(update_fields=["expira_em"])
+        mail.outbox.clear()
+
+        processar_prazos()
+
+        entrada.refresh_from_db()
+        self.assertEqual(entrada.status, ListaEspera.Status.AVISADO)
+
+
+class CheckinTests(TestCase):
+    def setUp(self):
+        self.condominio, self.local, self.unidade = criar_base()
+        self.morador = criar_morador(self.unidade)
+        self.sindico = criar_sindico(self.condominio, self.unidade)
+        self.reserva = criar_reserva(
+            self.condominio,
+            self.local,
+            self.unidade,
+            self.morador,
+            status=Reserva.Status.CONFIRMADA,
+        )
+        self.reserva.codigo_checkin = "ABC123"
+        self.reserva.save(update_fields=["codigo_checkin"])
+
+    def test_sindico_registra_checkin(self):
+        self.client.force_login(self.sindico)
+
+        resposta = self.client.post(
+            reverse("checkin", kwargs={"slug": self.condominio.slug}),
+            {"codigo": "abc123"},
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.reserva.refresh_from_db()
+        self.assertIsNotNone(self.reserva.checkin_em)
+
+    def test_codigo_invalido_nao_registra(self):
+        self.client.force_login(self.sindico)
+
+        self.client.post(
+            reverse("checkin", kwargs={"slug": self.condominio.slug}),
+            {"codigo": "XXXXXX"},
+        )
+
+        self.reserva.refresh_from_db()
+        self.assertIsNone(self.reserva.checkin_em)
+
+    def test_morador_nao_acessa_checkin(self):
+        self.client.force_login(self.morador)
+
+        resposta = self.client.get(
+            reverse("checkin", kwargs={"slug": self.condominio.slug})
+        )
+
+        self.assertEqual(resposta.status_code, 403)
+
+    def test_qr_do_dono_responde_png(self):
+        self.client.force_login(self.morador)
+
+        resposta = self.client.get(
+            reverse(
+                "reserva_qr",
+                kwargs={"slug": self.condominio.slug, "pk": self.reserva.pk},
+            )
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta["Content-Type"], "image/png")
+
+
+class RelatoriosTests(TestCase):
+    def setUp(self):
+        self.condominio, self.local, self.unidade = criar_base()
+        self.morador = criar_morador(self.unidade)
+        self.sindico = criar_sindico(self.condominio, self.unidade)
+        criar_reserva(
+            self.condominio,
+            self.local,
+            self.unidade,
+            self.morador,
+            status=Reserva.Status.CONFIRMADA,
+        )
+
+    def test_sindico_ve_relatorio(self):
+        self.client.force_login(self.sindico)
+
+        resposta = self.client.get(
+            reverse("relatorios", kwargs={"slug": self.condominio.slug})
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Receita confirmada")
+        self.assertContains(resposta, "Quiosque Primavera")
+
+    def test_morador_nao_ve_relatorio(self):
+        self.client.force_login(self.morador)
+
+        resposta = self.client.get(
+            reverse("relatorios", kwargs={"slug": self.condominio.slug})
+        )
+
+        self.assertEqual(resposta.status_code, 403)
+
+
+class WhatsAppTests(TestCase):
+    def test_link_adiciona_codigo_do_pais(self):
+        link = link_whatsapp("(47) 99999-0000", "Oi")
+
+        self.assertTrue(link.startswith("https://wa.me/5547999990000"))
+        self.assertIn("text=Oi", link)
+
+    def test_sem_telefone_nao_gera_link(self):
+        self.assertEqual(link_whatsapp("", "Oi"), "")

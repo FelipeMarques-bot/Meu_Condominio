@@ -204,8 +204,8 @@ Comprovantes continuam no disco local (ou no R2, se configurado), porque o Cloud
 
 - **E-mail**: configure `EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` e `DEFAULT_FROM_EMAIL`. O aviso vai para o morador e para quem tem papel de síndico ou administradora (desde que o usuário tenha e-mail cadastrado).
 - **Telegram**: crie um bot com o `@BotFather`, coloque o token em `TELEGRAM_BOT_TOKEN`, adicione o bot ao grupo da administração e informe o `chat_id` em Configurações. O canal é gratuito e recebe novos pedidos, comprovantes, cancelamentos, expirações e prazos vencidos.
-- **Prazos automáticos**: defina `TAREFAS_TOKEN` e agende uma chamada diária (cron-job.org, EasyCron ou o agendador da sua hospedagem) para
-  `https://SEU-DOMINIO/tarefas/prazos/SEU-TOKEN/`. A tarefa expira reservas sem comprovante, aplica a política de prazo de análise e envia o lembrete das reservas do dia seguinte.
+- **Prazos automáticos**: em produção o próprio app roda a rotina a cada 6 horas (`AGENDADOR_INTERNO=True`), sem depender de cron externo. Ela expira reservas sem comprovante, aplica a política de prazo de análise e envia o lembrete das reservas do dia seguinte.
+- Se preferir um agendador externo, defina `AGENDADOR_INTERNO=False` e chame `/tarefas/prazos/<TAREFAS_TOKEN>/` uma vez por dia.
 - Sem `TAREFAS_TOKEN`, o endpoint responde 404 e nada roda sozinho — os prazos continuam visíveis no painel, mas sem aviso automático.
 
 ## Planos

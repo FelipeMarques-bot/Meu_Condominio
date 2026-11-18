@@ -174,3 +174,31 @@ class ComprovanteForm(forms.Form):
                 "O conteúdo do arquivo não corresponde ao formato informado."
             )
         return arquivo
+
+
+class ListaEsperaForm(forms.Form):
+    data = forms.DateField(
+        label="Data",
+        widget=forms.DateInput(attrs={**CAMPO_TEXTO, "type": "date"}),
+    )
+    unidade = forms.ModelChoiceField(
+        label="Unidade",
+        queryset=Unidade.objects.none(),
+        widget=forms.Select(attrs=CAMPO_TEXTO),
+    )
+
+    def __init__(self, *args, condominio, usuario, local, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.condominio = condominio
+        self.local = local
+        self.fields["unidade"].queryset = Unidade.objects.filter(
+            condominio=condominio,
+            vinculos__usuario=usuario,
+            vinculos__ativo=True,
+        ).distinct()
+
+    def clean_data(self):
+        data = self.cleaned_data["data"]
+        if data < timezone.localdate():
+            raise forms.ValidationError("Escolha uma data a partir de hoje.")
+        return data

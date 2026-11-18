@@ -1,19 +1,22 @@
 from calendar import Calendar
 from datetime import date, datetime, time, timedelta
+from io import BytesIO
 from pathlib import Path
 
+import qrcode
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Q
-from django.http import FileResponse, Http404
+from django.db.models import Count, Q, Sum
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.formats import date_format
 
 from apps.core.models import ConfiguracaoCondominio
 from apps.core.notifications import (
+    link_whatsapp,
     notificar_nova_analise,
     notificar_reserva_cancelada,
     notificar_reserva_confirmada,
@@ -29,8 +32,9 @@ from apps.pagamentos import abacatepay
 from apps.pagamentos.brcode import gerar_payload, gerar_qr_data_uri
 
 from .codigos import gerar_codigo_checkin
-from .forms import ComprovanteForm, ReservaForm
-from .models import Local, Reserva
+from .forms import ComprovanteForm, ListaEsperaForm, ReservaForm
+from .models import ListaEspera, Local, Reserva
+from .prazos import liberar_lista_espera
 
 HOLD_HORAS = 2
 
@@ -140,6 +144,7 @@ def reservar(request, slug, local_slug):
             "local": local,
             "configuracao": configuracao,
             "form": form,
+            "unidades": unidades_do_usuario(request.user, condominio),
         },
     )
 
@@ -248,6 +253,10 @@ def minhas_reservas(request, slug):
         .select_related("local", "unidade")
         .distinct()
     )
+    esperas = ListaEspera.objects.filter(
+        condominio=condominio,
+        solicitante=request.user,
+    ).select_related("local", "unidade")
 
     return render(
         request,
@@ -255,6 +264,7 @@ def minhas_reservas(request, slug):
         {
             "condominio": condominio,
             "reservas": reservas,
+            "esperas": esperas,
             "calendario": _calendario_do_mes(
                 request,
                 condominio,
@@ -425,6 +435,7 @@ def cancelar_reserva(request, slug, pk):
     reserva.status = Reserva.Status.CANCELADA
     reserva.save(update_fields=["status", "atualizado_em"])
     notificar_reserva_cancelada(reserva)
+    liberar_lista_espera(reserva)
     messages.success(request, "Reserva cancelada.")
     return redirect("minhas_reservas", slug=condominio.slug)
 
@@ -472,7 +483,15 @@ def analise_reserva(request, slug, pk):
     return render(
         request,
         "reservas/analise.html",
-        {"condominio": condominio, "reserva": reserva},
+        {
+            "condominio": condominio,
+            "reserva": reserva,
+            "whatsapp_url": link_whatsapp(
+                reserva.solicitante.telefone if reserva.solicitante else "",
+                f"Ol\u00e1! Sobre a reserva do {reserva.local.nome} em "
+                f"{date_format(reserva.inicio, 'd/m/Y H:i')}.",
+            ),
+        },
     )
 
 
@@ -536,3 +555,182 @@ def rejeitar_reserva(request, slug, pk):
     notificar_reserva_rejeitada(reserva)
     messages.success(request, "Comprovante recusado e morador notificado.")
     return redirect("analise_reserva", slug=slug, pk=pk)
+
+
+@login_required
+def entrar_na_espera(request, slug, local_slug):
+    condominio = _condominio(request)
+    local = get_object_or_404(Local, condominio=condominio, slug=local_slug, ativo=True)
+
+    if request.method != "POST":
+        return redirect("reservar", slug=slug, local_slug=local_slug)
+
+    form = ListaEsperaForm(
+        request.POST, condominio=condominio, usuario=request.user, local=local
+    )
+    if not form.is_valid():
+        erro = next(iter(form.errors.values()))[0]
+        messages.error(request, f"N\u00e3o foi poss\u00edvel entrar na lista: {erro}")
+        return redirect("reservar", slug=slug, local_slug=local_slug)
+
+    entrada, criada = ListaEspera.objects.get_or_create(
+        condominio=condominio,
+        local=local,
+        unidade=form.cleaned_data["unidade"],
+        data=form.cleaned_data["data"],
+        status=ListaEspera.Status.AGUARDANDO,
+        defaults={"solicitante": request.user},
+    )
+    if criada:
+        messages.success(
+            request,
+            "Voc\u00ea entrou na lista de espera. Avisamos por e-mail quando vagar.",
+        )
+    else:
+        messages.info(request, "Voc\u00ea j\u00e1 est\u00e1 na lista para esse dia.")
+    return redirect("minhas_reservas", slug=slug)
+
+
+@login_required
+def cancelar_espera(request, slug, pk):
+    condominio = _condominio(request)
+    entrada = get_object_or_404(ListaEspera, condominio=condominio, pk=pk)
+    if entrada.solicitante_id != request.user.id:
+        raise PermissionDenied("Esta espera n\u00e3o \u00e9 sua.")
+
+    if request.method == "POST" and entrada.status == ListaEspera.Status.AGUARDANDO:
+        entrada.status = ListaEspera.Status.CANCELADO
+        entrada.save(update_fields=["status"])
+        messages.success(request, "Sa\u00edda da lista de espera registrada.")
+    return redirect("minhas_reservas", slug=slug)
+
+
+@login_required
+@sindico_required
+def checkin(request, slug):
+    condominio = _condominio(request)
+    hoje = timezone.localdate()
+    fuso = timezone.get_current_timezone()
+    inicio = timezone.make_aware(datetime.combine(hoje, time.min), fuso)
+    fim = inicio + timedelta(days=1)
+
+    encontrada = None
+    if request.method == "POST":
+        codigo = request.POST.get("codigo", "").strip().upper()
+        encontrada = (
+            Reserva.objects.filter(
+                condominio=condominio,
+                codigo_checkin=codigo,
+                status=Reserva.Status.CONFIRMADA,
+            )
+            .select_related("local", "unidade", "solicitante")
+            .first()
+        )
+        if encontrada is None:
+            messages.error(
+                request,
+                "C\u00f3digo n\u00e3o encontrado entre as reservas confirmadas.",
+            )
+        elif encontrada.checkin_em:
+            messages.info(
+                request,
+                "Este c\u00f3digo j\u00e1 foi usado em "
+                f"{timezone.localtime(encontrada.checkin_em):%d/%m/%Y %H:%M}.",
+            )
+        else:
+            encontrada.checkin_em = timezone.now()
+            encontrada.save(update_fields=["checkin_em", "atualizado_em"])
+            if encontrada.inicio.date() != hoje:
+                messages.warning(
+                    request,
+                    "Check-in registrado fora do dia da reserva.",
+                )
+            else:
+                messages.success(request, "Check-in confirmado.")
+
+    do_dia = (
+        Reserva.objects.filter(
+            condominio=condominio,
+            status=Reserva.Status.CONFIRMADA,
+            inicio__gte=inicio,
+            inicio__lt=fim,
+        )
+        .select_related("local", "unidade", "solicitante")
+        .order_by("inicio")
+    )
+
+    return render(
+        request,
+        "reservas/checkin.html",
+        {
+            "condominio": condominio,
+            "reservas": do_dia,
+            "encontrada": encontrada,
+        },
+    )
+
+
+@login_required
+def reserva_qr(request, slug, pk):
+    reserva = _reserva_para_usuario(request, pk)
+    if not reserva.codigo_checkin:
+        raise Http404
+
+    imagem = qrcode.make(reserva.codigo_checkin)
+    buffer = BytesIO()
+    imagem.save(buffer, format="PNG")
+    resposta = HttpResponse(buffer.getvalue(), content_type="image/png")
+    resposta["Cache-Control"] = "private, max-age=300"
+    return resposta
+
+
+@login_required
+@sindico_required
+def relatorios(request, slug):
+    condominio = _condominio(request)
+    referencia = _mes_referencia(request.GET.get("mes", ""))
+    proximo = (referencia + timedelta(days=32)).replace(day=1)
+    fuso = timezone.get_current_timezone()
+    inicio = timezone.make_aware(datetime.combine(referencia, time.min), fuso)
+    fim = timezone.make_aware(datetime.combine(proximo, time.min), fuso)
+
+    reservas = Reserva.objects.filter(
+        condominio=condominio, inicio__gte=inicio, inicio__lt=fim
+    )
+    confirmadas = reservas.filter(status=Reserva.Status.CONFIRMADA)
+    total_confirmado = confirmadas.aggregate(total=Sum("valor"))["total"] or 0
+    por_local = (
+        confirmadas.values("local__nome")
+        .annotate(quantidade=Count("id"), total=Sum("valor"))
+        .order_by("-quantidade", "local__nome")
+    )
+    por_unidade = (
+        confirmadas.values("unidade__bloco", "unidade__numero")
+        .annotate(quantidade=Count("id"), total=Sum("valor"))
+        .order_by("-quantidade")[:10]
+    )
+
+    return render(
+        request,
+        "reservas/relatorios.html",
+        {
+            "condominio": condominio,
+            "mes": referencia,
+            "mes_anterior": (referencia - timedelta(days=1)).replace(day=1),
+            "mes_seguinte": proximo,
+            "total_reservas": reservas.count(),
+            "total_confirmadas": confirmadas.count(),
+            "total_pendentes": reservas.filter(
+                status__in=[
+                    Reserva.Status.AGUARDANDO_COMPROVANTE,
+                    Reserva.Status.EM_ANALISE,
+                ]
+            ).count(),
+            "total_canceladas": reservas.filter(
+                status__in=[Reserva.Status.CANCELADA, Reserva.Status.EXPIRADA]
+            ).count(),
+            "total_confirmado": total_confirmado,
+            "por_local": por_local,
+            "por_unidade": por_unidade,
+        },
+    )

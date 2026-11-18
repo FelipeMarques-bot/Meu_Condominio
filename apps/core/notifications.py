@@ -1,4 +1,4 @@
-﻿import json
+import json
 import logging
 import urllib.error
 import urllib.request
@@ -289,3 +289,29 @@ def enviar_telegram(condominio, texto: str) -> bool:
     except (urllib.error.URLError, TimeoutError, ValueError):
         logger.warning("Falha ao enviar mensagem ao Telegram", exc_info=True)
         return False
+
+
+def link_whatsapp(telefone: str, texto: str) -> str:
+    from urllib.parse import quote
+
+    digitos = "".join(caractere for caractere in (telefone or "") if caractere.isdigit())
+    if len(digitos) in (10, 11):
+        digitos = f"55{digitos}"
+    if not digitos:
+        return ""
+    return f"https://wa.me/{digitos}?text={quote(texto)}"
+
+
+def notificar_vaga_liberada(entrada) -> None:
+    if not entrada.solicitante or not entrada.solicitante.email:
+        return
+    _enviar_email(
+        f"Vaga liberada \u00b7 {entrada.local.nome}",
+        (
+            "Um hor\u00e1rio que voc\u00ea esperava foi liberado.\n\n"
+            f"Espa\u00e7o: {entrada.local.nome}\n"
+            f"Data: {entrada.data:%d/%m/%Y}\n\n"
+            "Entre no app e fa\u00e7a a reserva antes que outra pessoa pegue."
+        ),
+        [entrada.solicitante.email],
+    )

@@ -7,9 +7,10 @@ from apps.core.notifications import (
     notificar_lembrete_reserva,
     notificar_prazo_vencido,
     notificar_reserva_expirada,
+    notificar_vaga_liberada,
 )
 
-from .models import Reserva
+from .models import ListaEspera, Reserva
 
 
 def _base():
@@ -29,6 +30,7 @@ def expirar_sem_comprovante(agora=None) -> int:
         reserva.status = Reserva.Status.EXPIRADA
         reserva.save(update_fields=["status", "atualizado_em"])
         notificar_reserva_expirada(reserva, "prazo para envio do comprovante")
+        liberar_lista_espera(reserva)
         total += 1
     return total
 
@@ -58,6 +60,7 @@ def alertar_prazos(agora=None) -> int:
                 update_fields=["status", "prazo_alertado", "atualizado_em"]
             )
             notificar_reserva_expirada(reserva, "prazo de análise vencido")
+            liberar_lista_espera(reserva)
         else:
             reserva.save(update_fields=["prazo_alertado", "atualizado_em"])
             notificar_prazo_vencido(reserva)
@@ -95,3 +98,20 @@ def processar_prazos(dias_lembrete: int = 1) -> dict:
         "prazos_vencidos": alertar_prazos(agora),
         "lembretes": enviar_lembretes(dias_lembrete, agora),
     }
+
+
+def liberar_lista_espera(reserva) -> int:
+    dia = timezone.localtime(reserva.inicio).date()
+    entradas = ListaEspera.all_objects.filter(
+        local=reserva.local,
+        data=dia,
+        status=ListaEspera.Status.AGUARDANDO,
+    ).select_related("solicitante", "local")
+    total = 0
+    for entrada in entradas:
+        entrada.status = ListaEspera.Status.AVISADO
+        entrada.avisado_em = timezone.now()
+        entrada.save(update_fields=["status", "avisado_em"])
+        notificar_vaga_liberada(entrada)
+        total += 1
+    return total

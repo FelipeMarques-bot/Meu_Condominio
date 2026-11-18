@@ -98,6 +98,7 @@ class Reserva(models.Model):
     motivo_rejeicao = models.TextField(blank=True)
     prazo_alertado = models.BooleanField(default=False)
     lembrete_enviado = models.BooleanField(default=False)
+    checkin_em = models.DateTimeField(null=True, blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 
@@ -152,3 +153,44 @@ class Reserva(models.Model):
     @property
     def pix_vencido(self) -> bool:
         return bool(self.pix_expira_em and timezone.now() > self.pix_expira_em)
+
+
+class ListaEspera(models.Model):
+    class Status(models.TextChoices):
+        AGUARDANDO = "aguardando", "Aguardando vaga"
+        AVISADO = "avisado", "Avisado"
+        CANCELADO = "cancelado", "Cancelado"
+
+    condominio = models.ForeignKey(
+        Condominio, on_delete=models.CASCADE, related_name="lista_espera"
+    )
+    local = models.ForeignKey(
+        Local, on_delete=models.CASCADE, related_name="lista_espera"
+    )
+    unidade = models.ForeignKey(
+        Unidade, on_delete=models.CASCADE, related_name="lista_espera"
+    )
+    solicitante = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="lista_espera",
+    )
+    data = models.DateField()
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.AGUARDANDO
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+    avisado_em = models.DateTimeField(null=True, blank=True)
+
+    objects = TenantManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        ordering = ["data", "criado_em"]
+        verbose_name = "lista de espera"
+        verbose_name_plural = "listas de espera"
+
+    def __str__(self) -> str:
+        return f"{self.local.nome} · {self.data:%d/%m/%Y} · {self.unidade.rotulo}"

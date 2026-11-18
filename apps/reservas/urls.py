@@ -4,8 +4,21 @@ from . import views
 
 urlpatterns = [
     path("c/<slug:slug>/reservar/<slug:local_slug>/", views.reservar, name="reservar"),
+    path(
+        "c/<slug:slug>/reservar/<slug:local_slug>/espera/",
+        views.entrar_na_espera,
+        name="entrar_na_espera",
+    ),
+    path(
+        "c/<slug:slug>/esperas/<int:pk>/cancelar/",
+        views.cancelar_espera,
+        name="cancelar_espera",
+    ),
+    path("c/<slug:slug>/checkin/", views.checkin, name="checkin"),
+    path("c/<slug:slug>/relatorios/", views.relatorios, name="relatorios"),
     path("c/<slug:slug>/reservas/", views.minhas_reservas, name="minhas_reservas"),
     path("c/<slug:slug>/reservas/<int:pk>/", views.reserva_detalhe, name="reserva_detalhe"),
+    path("c/<slug:slug>/reservas/<int:pk>/qr/", views.reserva_qr, name="reserva_qr"),
     path("c/<slug:slug>/reservas/<int:pk>/pagamento/", views.pagamento, name="pagamento"),
     path(
         "c/<slug:slug>/reservas/<int:pk>/comprovante/",
