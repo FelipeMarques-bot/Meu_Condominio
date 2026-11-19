@@ -8,7 +8,7 @@
       {% endif %}
       <span class="leading-tight">
         <span class="block text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-muted">{{ condominio.nome }}</span>
-        <span class="block font-display text-base">{% if ativo == 'gestao' %}Gestão{% elif ativo == 'painel' %}Painel{% elif ativo == 'conta' %}Minha conta{% else %}Reservas{% endif %}</span>
+        <span class="block font-display text-base">{% if ativo == 'gestao' %}Gestão{% elif ativo == 'painel' %}Painel{% elif ativo == 'conta' %}Minha conta{% elif ativo == 'plano' %}Plano{% else %}Reservas{% endif %}</span>
       </span>
     </a>
 
@@ -45,6 +45,10 @@
         </a>
       {% endif %}
       {% if user.is_authenticated %}
+        <a href="{% url 'assinatura' slug=condominio.slug %}"
+           class="rounded-full px-3 py-2 transition hover:bg-white/70 hover:text-ink">
+          Plano
+        </a>
         <a href="{% url 'minha_conta' slug=condominio.slug %}"
            class="rounded-full px-3 py-2 transition {% if ativo == 'conta' %}bg-lagoon/10 text-lagoon{% else %}hover:bg-white/70 hover:text-ink{% endif %}">
           Conta
@@ -60,5 +64,7 @@
     </div>
   </div>
 </header>
+
+{% include "partials/aviso_assinatura.html" %}
 
 {% include "partials/nav_inferior.html" %}

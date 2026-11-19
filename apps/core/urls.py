@@ -20,12 +20,28 @@ urlpatterns = [
         name="plataforma_armazenamento",
     ),
     path(
+        "plataforma/pagamentos/<int:pk>/analisar/",
+        views.plataforma_pagamento_confirmar,
+        name="plataforma_pagamento_confirmar",
+    ),
+    path(
+        "plataforma/pagamentos/<int:pk>/comprovante/",
+        views.plataforma_pagamento_comprovante,
+        name="plataforma_pagamento_comprovante",
+    ),
+    path(
+        "plataforma/condominios/<int:pk>/liberar/",
+        views.plataforma_liberar,
+        name="plataforma_liberar",
+    ),
+    path(
         "plataforma/sair/",
         auth_views.LogoutView.as_view(next_page="plataforma_entrar"),
         name="plataforma_sair",
     ),
     path("c/<slug:slug>/", views.painel_redirect, name="painel_redirect"),
     path("c/<slug:slug>/agenda/", views.agenda, name="agenda"),
+    path("c/<slug:slug>/assinatura/", views.assinatura, name="assinatura"),
     path("c/<slug:slug>/conta/", views.minha_conta, name="minha_conta"),
     path(
         "c/<slug:slug>/conta/senha/",

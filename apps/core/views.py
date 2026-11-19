@@ -32,16 +32,18 @@ from .forms import (
     LocalForm,
     NovoCondominioForm,
     OnboardingForm,
+    PagamentoPlanoForm,
     UnidadeForm,
     slug_condominio_unico,
 )
-from .models import Condominio, Plano
+from .models import Condominio, PagamentoPlano, Plano
 from .notifications import (
     emails_administradores,
     link_whatsapp,
     telegram_configurado,
 )
 from .permissoes import gestao_required, pode_aprovar, pode_gerir
+from .trial import hashes_do_cadastro, trial_ja_usado
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,14 @@ def _condominio(request):
     if condominio is None:
         condominio = None
     return condominio
+
+
+def _aviso_trial_usado() -> str:
+    return (
+        "Já existe um teste gratuito iniciado com estes dados (rede, celular ou "
+        "e-mail) há pouco tempo. Entre na conta existente ou fale com "
+        f"{settings.CONTATO_EMAIL} para liberar outro condomínio."
+    )
 
 
 def _slug_unico(condominio, nome: str, ignorar=None) -> str:
@@ -151,28 +161,37 @@ def criar_condominio(request):
         form = CondominioDoUsuarioForm(request.POST or None)
         if request.method == "POST" and form.is_valid():
             dados = form.cleaned_data
-            with transaction.atomic():
-                condominio = Condominio.objects.create(
-                    nome=dados["nome"],
-                    slug=slug_condominio_unico(dados["nome"], dados["slug"]),
-                    plano=Plano.para_quantidade(1),
-                    trial_ate=timezone.now() + timedelta(days=14),
-                )
-                unidade = Unidade.objects.create(
-                    condominio=condominio,
-                    numero="Administração",
-                    administrativa=True,
-                )
-                VinculoUnidade.objects.create(
-                    usuario=request.user,
-                    unidade=unidade,
-                    papel=VinculoUnidade.Papel.SINDICO,
-                )
-            messages.success(
-                request,
-                f"{condominio.nome} criado! Você é síndico e tem 14 dias de teste.",
+            hashes = hashes_do_cadastro(
+                request, request.user.telefone, request.user.email
             )
-            return redirect("gestao", slug=condominio.slug)
+            if trial_ja_usado(hashes):
+                form.add_error(None, _aviso_trial_usado())
+            else:
+                with transaction.atomic():
+                    condominio = Condominio.objects.create(
+                        nome=dados["nome"],
+                        slug=slug_condominio_unico(dados["nome"], dados["slug"]),
+                        plano=Plano.para_quantidade(1),
+                        trial_ate=timezone.now()
+                        + timedelta(days=settings.TRIAL_DIAS),
+                        **hashes,
+                    )
+                    unidade = Unidade.objects.create(
+                        condominio=condominio,
+                        numero="Administração",
+                        administrativa=True,
+                    )
+                    VinculoUnidade.objects.create(
+                        usuario=request.user,
+                        unidade=unidade,
+                        papel=VinculoUnidade.Papel.SINDICO,
+                    )
+                messages.success(
+                    request,
+                    f"{condominio.nome} criado! Você é síndico e tem "
+                    f"{settings.TRIAL_DIAS} dias de teste.",
+                )
+                return redirect("gestao", slug=condominio.slug)
         return render(
             request,
             "core/criar_condominio.html",
@@ -182,39 +201,107 @@ def criar_condominio(request):
     form = OnboardingForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         dados = form.cleaned_data
-        with transaction.atomic():
-            condominio = Condominio.objects.create(
-                nome=dados["condominio"],
-                slug=slug_condominio_unico(dados["condominio"], dados["slug"]),
-                plano=Plano.para_quantidade(1),
-                trial_ate=timezone.now() + timedelta(days=14),
+        hashes = hashes_do_cadastro(request, dados["telefone"], dados["email"])
+        if trial_ja_usado(hashes):
+            form.add_error(None, _aviso_trial_usado())
+        else:
+            with transaction.atomic():
+                condominio = Condominio.objects.create(
+                    nome=dados["condominio"],
+                    slug=slug_condominio_unico(dados["condominio"], dados["slug"]),
+                    plano=Plano.para_quantidade(1),
+                    trial_ate=timezone.now() + timedelta(days=settings.TRIAL_DIAS),
+                    **hashes,
+                )
+                unidade = Unidade.objects.create(
+                    condominio=condominio,
+                    numero="Administração",
+                    administrativa=True,
+                )
+                usuario = Usuario.objects.create_user(
+                    username=dados["username"],
+                    email=dados["email"],
+                    password=dados["senha"],
+                    first_name=dados["nome"],
+                    telefone=dados["telefone"],
+                )
+                VinculoUnidade.objects.create(
+                    usuario=usuario,
+                    unidade=unidade,
+                    papel=VinculoUnidade.Papel.SINDICO,
+                )
+            login(request, usuario)
+            messages.success(
+                request,
+                f"{condominio.nome} está no ar! Você tem {settings.TRIAL_DIAS} "
+                "dias de teste e já entra como síndico.",
             )
-            unidade = Unidade.objects.create(
-                condominio=condominio,
-                numero="Administração",
-                administrativa=True,
-            )
-            usuario = Usuario.objects.create_user(
-                username=dados["username"],
-                email=dados["email"],
-                password=dados["senha"],
-                first_name=dados["nome"],
-                telefone=dados["telefone"],
-            )
-            VinculoUnidade.objects.create(
-                usuario=usuario,
-                unidade=unidade,
-                papel=VinculoUnidade.Papel.SINDICO,
-            )
-        login(request, usuario)
-        messages.success(
-            request,
-            f"{condominio.nome} está no ar! Você tem 14 dias de teste e já entra "
-            "como síndico.",
-        )
-        return redirect("gestao", slug=condominio.slug)
+            return redirect("gestao", slug=condominio.slug)
 
     return render(request, "core/criar_condominio.html", {"form": form})
+
+
+@login_required
+def assinatura(request, slug):
+    """Status do teste/plano e envio do comprovante de pagamento."""
+    condominio = getattr(request, "condominio", None)
+    if condominio is None:
+        raise Http404("Condomínio não encontrado.")
+    if not request.user.vinculos.filter(
+        ativo=True, unidade__condominio=condominio
+    ).exists():
+        raise Http404("Você não tem acesso a este condomínio.")
+
+    gerir = pode_gerir(request.user, condominio)
+    pendente = condominio.pagamentos_plano.filter(
+        status=PagamentoPlano.Status.PENDENTE
+    ).first()
+    form = None
+
+    if request.method == "POST":
+        if not gerir:
+            messages.error(request, "Somente a gestão pode enviar o comprovante.")
+            return redirect("assinatura", slug=condominio.slug)
+        if pendente:
+            messages.info(
+                request,
+                "Já existe um comprovante aguardando conferência. "
+                "Aguarde a liberação.",
+            )
+            return redirect("assinatura", slug=condominio.slug)
+        form = PagamentoPlanoForm(request.POST, request.FILES)
+        if form.is_valid():
+            plano = form.cleaned_data["plano"]
+            PagamentoPlano.objects.create(
+                condominio=condominio,
+                plano=plano,
+                valor=plano.preco_mensal,
+                comprovante=form.cleaned_data["comprovante"],
+            )
+            messages.success(
+                request,
+                "Comprovante enviado. O acesso será liberado após a conferência.",
+            )
+            return redirect("assinatura", slug=condominio.slug)
+
+    if form is None:
+        form = PagamentoPlanoForm()
+
+    return render(
+        request,
+        "core/assinatura.html",
+        {
+            "condominio": condominio,
+            "planos": Plano.objects.filter(ativo=True).order_by(
+                "ordem", "preco_mensal"
+            ),
+            "form": form,
+            "pendente": pendente,
+            "pagamentos": condominio.pagamentos_plano.select_related("plano")[:6],
+            "pode_gerir": gerir,
+            "dias_assinatura": settings.ASSINATURA_DIAS,
+        },
+    )
 
 
 def painel_redirect(request, slug):
@@ -639,6 +726,13 @@ def usar_convite(request, slug, token):
     condominio = getattr(request, "condominio", None)
     if condominio is None:
         condominio = get_object_or_404(Condominio, slug=slug, ativo=True)
+    if not condominio.acesso_liberado and not request.user.is_superuser:
+        return render(
+            request,
+            "core/acesso_suspenso.html",
+            {"condominio": condominio},
+            status=403,
+        )
     convite = get_object_or_404(Convite, condominio=condominio, token=token)
 
     if not convite.valido:
@@ -796,10 +890,19 @@ def plataforma_painel(request):
             condominio.quantidade_unidades or condominio.total_unidades
         )
 
+    pagamentos_pendentes = PagamentoPlano.objects.filter(
+        status=PagamentoPlano.Status.PENDENTE
+    ).select_related("condominio", "plano")
+
     return render(
         request,
         "core/plataforma.html",
-        {"form": form, "condominios": condominios},
+        {
+            "form": form,
+            "condominios": condominios,
+            "pagamentos_pendentes": pagamentos_pendentes,
+            "dias_assinatura": settings.ASSINATURA_DIAS,
+        },
     )
 
 
@@ -862,3 +965,95 @@ def plataforma_armazenamento(request):
             "erro": erro,
         },
     )
+
+
+@_plataforma_required
+def plataforma_pagamento_confirmar(request, pk):
+    if request.method != "POST":
+        raise Http404
+
+    pagamento = get_object_or_404(
+        PagamentoPlano.objects.select_related("condominio", "plano"), pk=pk
+    )
+    acao = request.POST.get("acao")
+    if acao not in {"confirmar", "recusar"}:
+        raise Http404
+
+    pagamento.analisado_em = timezone.now()
+    pagamento.analisado_por = request.user
+    pagamento.observacao = (request.POST.get("observacao") or "").strip()[:200]
+    if acao == "confirmar":
+        pagamento.status = PagamentoPlano.Status.CONFIRMADO
+        condominio = pagamento.condominio
+        base = timezone.now()
+        if condominio.trial_ate and condominio.trial_ate > base:
+            base = condominio.trial_ate
+        if (
+            condominio.assinatura_valida_ate
+            and condominio.assinatura_valida_ate > base
+        ):
+            base = condominio.assinatura_valida_ate
+        condominio.assinatura_valida_ate = base + timedelta(
+            days=settings.ASSINATURA_DIAS
+        )
+        condominio.plano = pagamento.plano
+        condominio.isento_assinatura = False
+        condominio.save(
+            update_fields=[
+                "assinatura_valida_ate",
+                "plano",
+                "isento_assinatura",
+            ]
+        )
+        messages.success(
+            request,
+            f"Plano de {condominio.nome} liberado até "
+            f"{timezone.localtime(condominio.assinatura_valida_ate):%d/%m/%Y}.",
+        )
+    else:
+        pagamento.status = PagamentoPlano.Status.RECUSADO
+        messages.info(
+            request,
+            f"Comprovante de {pagamento.condominio.nome} recusado.",
+        )
+    pagamento.save(
+        update_fields=["status", "analisado_em", "analisado_por", "observacao"]
+    )
+    return redirect("plataforma")
+
+
+@_plataforma_required
+def plataforma_pagamento_comprovante(request, pk):
+    pagamento = get_object_or_404(PagamentoPlano, pk=pk)
+    if not pagamento.comprovante:
+        raise Http404("Comprovante não encontrado.")
+    arquivo = pagamento.comprovante.open("rb")
+    return FileResponse(
+        arquivo,
+        as_attachment=False,
+        filename=Path(pagamento.comprovante.name).name,
+    )
+
+
+@_plataforma_required
+def plataforma_liberar(request, pk):
+    if request.method != "POST":
+        raise Http404
+
+    condominio = get_object_or_404(Condominio, pk=pk)
+    base = timezone.now()
+    if condominio.trial_ate and condominio.trial_ate > base:
+        base = condominio.trial_ate
+    if condominio.assinatura_valida_ate and condominio.assinatura_valida_ate > base:
+        base = condominio.assinatura_valida_ate
+    condominio.assinatura_valida_ate = base + timedelta(
+        days=settings.ASSINATURA_DIAS
+    )
+    condominio.isento_assinatura = False
+    condominio.save(update_fields=["assinatura_valida_ate", "isento_assinatura"])
+    messages.success(
+        request,
+        f"{condominio.nome} liberado até "
+        f"{timezone.localtime(condominio.assinatura_valida_ate):%d/%m/%Y}.",
+    )
+    return redirect("plataforma")

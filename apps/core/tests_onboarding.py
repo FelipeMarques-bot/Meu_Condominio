@@ -77,7 +77,12 @@ class OnboardingTests(TestCase):
         self.client.logout()
         self.client.post(
             reverse("criar_condominio"),
-            dados(username="ana2", email="ana2@example.com"),
+            dados(
+                username="ana2",
+                email="ana2@example.com",
+                telefone="(47) 98888-1111",
+            ),
+            REMOTE_ADDR="198.51.100.7",
         )
 
         slugs = set(Condominio.objects.values_list("slug", flat=True))

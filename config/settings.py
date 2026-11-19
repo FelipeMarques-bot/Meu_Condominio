@@ -103,6 +103,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.middleware.TenantMiddleware",
+    "apps.core.middleware.AssinaturaMiddleware",
     "apps.core.agendador.AgendadorMiddleware",
 ]
 
@@ -223,6 +224,12 @@ VITE_DEV_SERVER = env("VITE_DEV_SERVER")
 
 SITE_NOME = env("SITE_NOME", "Meu Condomínio")
 CONTATO_EMAIL = env("CONTATO_EMAIL", "contato@meucondominio.com.br")
+
+TRIAL_DIAS = int(env("TRIAL_DIAS", "14"))
+TRIAL_JANELA_DIAS = int(env("TRIAL_JANELA_DIAS", "30"))
+ASSINATURA_DIAS = int(env("ASSINATURA_DIAS", "30"))
+PLANO_PIX_CHAVE = env("PLANO_PIX_CHAVE")
+PLANO_WHATSAPP = env("PLANO_WHATSAPP")
 
 TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN")
 TELEGRAM_TIMEOUT = int(env("TELEGRAM_TIMEOUT", "5"))

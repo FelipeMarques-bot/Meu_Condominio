@@ -3,11 +3,12 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 
+from apps.reservas.forms import ComprovanteForm
 from apps.reservas.models import Local
 from apps.usuarios.forms import CadastroConviteForm
 from apps.usuarios.models import Unidade
 
-from .models import Condominio, ConfiguracaoCondominio
+from .models import Condominio, ConfiguracaoCondominio, Plano
 from .seguranca import bloqueado, chave_tentativas, limpar, registrar_falha
 
 CAMPO_TEXTO = {"class": "field"}
@@ -349,3 +350,18 @@ class OnboardingForm(CadastroConviteForm):
 
     def clean_slug(self):
         return slugify(self.cleaned_data.get("slug") or "")
+
+class PagamentoPlanoForm(ComprovanteForm):
+    plano = forms.ModelChoiceField(
+        label="Plano escolhido",
+        queryset=Plano.objects.none(),
+        empty_label=None,
+        widget=forms.Select(attrs=CAMPO_TEXTO),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["plano"].queryset = Plano.objects.filter(ativo=True).order_by(
+            "ordem", "preco_mensal"
+        )
+        self.fields["comprovante"].label = "Comprovante do Pix"

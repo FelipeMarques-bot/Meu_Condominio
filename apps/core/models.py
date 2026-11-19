@@ -1,10 +1,12 @@
 import secrets
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
 from .segredos import criptografar, descriptografar
+from .storage import armazenamento_privado
 
 
 def novo_segredo_webhook() -> str:
@@ -59,6 +61,18 @@ class Condominio(models.Model):
         blank=True,
         help_text="Fim do período de teste. Em branco significa sem prazo de teste.",
     )
+    assinatura_valida_ate = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Fim do período pago. Depois disso o condomínio fica suspenso.",
+    )
+    isento_assinatura = models.BooleanField(
+        default=False,
+        help_text="Libera o acesso sem cobrança (condomínios internos ou de teste).",
+    )
+    trial_ip_hash = models.CharField(max_length=64, blank=True)
+    trial_telefone_hash = models.CharField(max_length=64, blank=True)
+    trial_email_hash = models.CharField(max_length=64, blank=True)
     quantidade_unidades = models.PositiveIntegerField(
         default=0,
         help_text=(
@@ -85,6 +99,36 @@ class Condominio(models.Model):
         if not self.em_trial:
             return 0
         return max(0, (self.trial_ate - timezone.now()).days)
+
+    @property
+    def assinatura_ativa(self) -> bool:
+        return bool(
+            self.assinatura_valida_ate
+            and self.assinatura_valida_ate > timezone.now()
+        )
+
+    @property
+    def acesso_liberado(self) -> bool:
+        sem_controle = self.trial_ate is None and self.assinatura_valida_ate is None
+        return bool(
+            self.ativo
+            and (
+                self.isento_assinatura
+                or sem_controle
+                or self.em_trial
+                or self.assinatura_ativa
+            )
+        )
+
+    @property
+    def trial_expirado(self) -> bool:
+        return bool(self.trial_ate and not self.em_trial and not self.assinatura_ativa)
+
+    @property
+    def dias_de_assinatura(self) -> int:
+        if not self.assinatura_ativa:
+            return 0
+        return max(0, (self.assinatura_valida_ate - timezone.now()).days)
 
     @property
     def iniciais(self) -> str:
@@ -226,3 +270,43 @@ class ConfiguracaoCondominio(models.Model):
             raise ValidationError({"prazo_analise_horas": "O prazo deve ser de ao menos 1 hora."})
         if not self.pix_dinamico_ativo:
             self.pix_modo = self.PixModo.MANUAL
+
+
+class PagamentoPlano(models.Model):
+    class Status(models.TextChoices):
+        PENDENTE = "pendente", "Aguardando conferência"
+        CONFIRMADO = "confirmado", "Confirmado"
+        RECUSADO = "recusado", "Recusado"
+
+    condominio = models.ForeignKey(
+        Condominio, on_delete=models.CASCADE, related_name="pagamentos_plano"
+    )
+    plano = models.ForeignKey(
+        Plano, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    valor = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    comprovante = models.FileField(
+        upload_to="planos/comprovantes/",
+        storage=armazenamento_privado,
+    )
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PENDENTE
+    )
+    observacao = models.CharField(max_length=200, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    analisado_em = models.DateTimeField(null=True, blank=True)
+    analisado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+
+    class Meta:
+        ordering = ["-criado_em"]
+        verbose_name = "pagamento de plano"
+        verbose_name_plural = "pagamentos de plano"
+
+    def __str__(self) -> str:
+        return f"{self.condominio} · {self.get_status_display()}"

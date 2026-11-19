@@ -31,6 +31,52 @@
     </p>
   </div>
 
+  {% if pagamentos_pendentes %}
+    <section class="mt-8 rounded-3xl border border-lagoon/30 bg-lagoon/5 p-5 sm:p-6" aria-label="Pagamentos de plano pendentes">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p class="eyebrow">Financeiro</p>
+          <h2 class="mt-1 font-display text-2xl">Comprovantes de plano aguardando</h2>
+        </div>
+        <span class="pill border-lagoon/30 bg-white text-lagoon">{{ pagamentos_pendentes|length }} pendente{{ pagamentos_pendentes|length|pluralize }}</span>
+      </div>
+      <ul class="mt-4 space-y-3">
+        {% for pagamento in pagamentos_pendentes %}
+          <li class="rounded-2xl border border-line bg-white/80 p-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="text-sm font-semibold">{{ pagamento.condominio.nome }}</p>
+                <p class="text-xs text-muted">
+                  {% if pagamento.plano %}{{ pagamento.plano.nome }}{% else %}Plano removido{% endif %}
+                  · R$ {{ pagamento.valor|floatformat:2 }}
+                  · enviado em {{ pagamento.criado_em|date:"d/m/Y H:i" }}
+                </p>
+              </div>
+              <a href="{% url 'plataforma_pagamento_comprovante' pk=pagamento.pk %}" target="_blank" rel="noopener"
+                 class="btn btn-ghost px-3 py-2 text-xs">Ver comprovante</a>
+            </div>
+            <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+              <input type="text" name="observacao" maxlength="200" placeholder="Observação (opcional)"
+                     form="confirmar-{{ pagamento.pk }}" class="field text-xs sm:max-w-xs">
+              <form id="confirmar-{{ pagamento.pk }}" method="post"
+                    action="{% url 'plataforma_pagamento_confirmar' pk=pagamento.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="confirmar">
+                <button type="submit" class="btn btn-primary w-full px-4 py-2 text-xs sm:w-auto">Confirmar e liberar</button>
+              </form>
+              <form method="post" action="{% url 'plataforma_pagamento_confirmar' pk=pagamento.pk %}"
+                    onsubmit="return confirm('Recusar este comprovante?');">
+                {% csrf_token %}
+                <input type="hidden" name="acao" value="recusar">
+                <button type="submit" class="btn btn-ghost w-full px-4 py-2 text-xs text-danger sm:w-auto">Recusar</button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
   <div class="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
     <section class="space-y-3" aria-label="Condomínios cadastrados">
       {% for item in condominios %}
@@ -59,21 +105,31 @@
                 {% endif %}
               </p>
               <p class="mt-1 text-[0.7rem] text-muted">
-                {% if item.em_trial %}
+                {% if item.isento_assinatura %}
+                  Isento de cobrança
+                {% elif item.assinatura_ativa %}
+                  Plano pago até {{ item.assinatura_valida_ate|date:"d/m/Y" }}
+                  ({{ item.dias_de_assinatura }} dia{{ item.dias_de_assinatura|pluralize }})
+                {% elif item.em_trial %}
                   Teste até {{ item.trial_ate|date:"d/m/Y" }} ({{ item.dias_de_trial }} dia{{ item.dias_de_trial|pluralize }} restante{{ item.dias_de_trial|pluralize }})
                 {% elif item.trial_ate %}
-                  Teste encerrado em {{ item.trial_ate|date:"d/m/Y" }}
+                  Suspenso desde {{ item.trial_ate|date:"d/m/Y" }}
                 {% else %}
                   Sem prazo de teste
                 {% endif %}
               </p>
             </div>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="pill {% if item.ativo %}text-ok{% else %}text-muted{% endif %}">
-              {% if item.ativo %}Ativo{% else %}Inativo{% endif %}
+          <div class="flex flex-wrap items-center justify-end gap-2">
+            <span class="pill {% if item.acesso_liberado %}text-ok{% else %}text-danger{% endif %}">
+              {% if item.acesso_liberado %}Liberado{% else %}Suspenso{% endif %}
             </span>
             <a href="{% url 'agenda' slug=item.slug %}" class="btn btn-ghost px-3 py-2 text-xs">Abrir</a>
+            <form method="post" action="{% url 'plataforma_liberar' pk=item.pk %}"
+                  onsubmit="return confirm('Liberar 30 dias para este condomínio?');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary px-3 py-2 text-xs">Liberar {{ dias_assinatura }} dias</button>
+            </form>
           </div>
         </article>
       {% empty %}

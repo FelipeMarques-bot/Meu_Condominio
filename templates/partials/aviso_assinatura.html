@@ -1,0 +1,32 @@
+{% if condominio %}
+  {% if not condominio.acesso_liberado %}
+    <div class="border-b border-danger/40 bg-danger text-paper">
+      <div class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <p class="font-semibold">
+          Acesso suspenso: o teste terminou e não há plano ativo.
+          {% if condominio.assinatura_valida_ate %}
+            Plano vencido em {{ condominio.assinatura_valida_ate|date:"d/m/Y" }}.
+          {% endif %}
+        </p>
+        <a href="{% url 'assinatura' slug=condominio.slug %}"
+           class="btn w-fit bg-paper px-4 py-2 text-xs text-ink hover:bg-white">
+          {% if pode_gerir %}Ativar plano agora{% else %}Ver status do plano{% endif %}
+        </a>
+      </div>
+    </div>
+  {% elif condominio.em_trial %}
+    <div class="border-b {% if condominio.dias_de_trial <= 5 %}border-danger/40 bg-danger text-paper{% else %}border-lagoon/30 bg-sand/80 text-ink{% endif %}">
+      <div class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <p>
+          {% if condominio.dias_de_trial <= 5 %}<strong class="font-semibold">Últimos dias de teste:</strong>{% else %}<strong class="font-semibold">Teste grátis:</strong>{% endif %}
+          {{ condominio.dias_de_trial }} dia{{ condominio.dias_de_trial|pluralize }} restante{{ condominio.dias_de_trial|pluralize }}
+          (até {{ condominio.trial_ate|date:"d/m/Y" }}). Depois disso o acesso é suspenso.
+        </p>
+        <a href="{% url 'assinatura' slug=condominio.slug %}"
+           class="btn w-fit px-4 py-2 text-xs {% if condominio.dias_de_trial <= 5 %}bg-paper text-ink hover:bg-white{% else %}btn-primary{% endif %}">
+          {% if pode_gerir %}Ativar meu plano{% else %}Ver planos{% endif %}
+        </a>
+      </div>
+    </div>
+  {% endif %}
+{% endif %}
