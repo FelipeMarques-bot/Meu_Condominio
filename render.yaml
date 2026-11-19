@@ -64,6 +64,16 @@ services:
         generateValue: true
       - key: SITE_NOME
         value: Meu Condomínio
+      - key: TRIAL_DIAS
+        value: "14"
+      - key: TRIAL_JANELA_DIAS
+        value: "30"
+      - key: ASSINATURA_DIAS
+        value: "30"
+      - key: PLANO_PIX_CHAVE
+        sync: false
+      - key: PLANO_WHATSAPP
+        sync: false
 
 databases:
   - name: meu-condominio-db
