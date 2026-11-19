@@ -65,6 +65,11 @@
                   <a href="https://wa.me/?text={{ item.mensagem|urlencode }}" target="_blank" rel="noopener"
                      class="btn btn-primary shrink-0 px-4 py-2">Enviar por WhatsApp</a>
                 {% endif %}
+                <form method="post" action="{% url 'convite_excluir' slug=condominio.slug pk=item.convite.pk %}"
+                      onsubmit="return confirm('Excluir este convite? O link deixa de funcionar.');">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-ghost shrink-0 px-4 py-2 text-danger">Excluir</button>
+                </form>
               </div>
             </li>
           {% endfor %}

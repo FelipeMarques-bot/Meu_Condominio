@@ -375,3 +375,30 @@
     scroll-behavior: auto !important;
   }
 }
+
+.campo-senha {
+  position: relative;
+}
+
+.campo-senha input {
+  padding-right: 5.5rem;
+}
+
+.campo-senha .olho-senha {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border-radius: 9999px;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.campo-senha .olho-senha:hover {
+  background: color-mix(in srgb, var(--color-sand) 55%, transparent);
+  color: var(--color-ink);
+}

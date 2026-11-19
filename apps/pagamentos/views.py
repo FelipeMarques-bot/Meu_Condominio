@@ -1,4 +1,4 @@
-﻿import hmac
+import hmac
 import json
 import logging
 

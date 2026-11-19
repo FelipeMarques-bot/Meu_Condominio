@@ -1,4 +1,5 @@
-﻿from datetime import timedelta
+import re
+from datetime import timedelta
 
 from django.test import TestCase
 from django.urls import reverse
@@ -280,6 +281,75 @@ class VinculoRemoverTests(TestCase):
             ),
         )
         self.assertFalse(VinculoUnidade.objects.filter(pk=vinculo.pk).exists())
+
+
+class PlataformaAcessoTests(TestCase):
+    def test_visitante_nao_abre_armazenamento(self):
+        resposta = self.client.get(reverse("plataforma_armazenamento"))
+
+        self.assertRedirects(
+            resposta, reverse("plataforma_entrar"), fetch_redirect_response=False
+        )
+
+    def test_morador_nao_abre_armazenamento(self):
+        condominio, unidade = criar_base()
+        morador = Usuario.objects.create_user(
+            username="morador", email="morador@example.com", password=SENHA
+        )
+        VinculoUnidade.objects.create(usuario=morador, unidade=unidade)
+        self.client.force_login(morador)
+
+        resposta = self.client.get(reverse("plataforma_armazenamento"))
+
+        self.assertRedirects(
+            resposta, reverse("plataforma_entrar"), fetch_redirect_response=False
+        )
+
+
+class ConviteExcluirTests(TestCase):
+    def test_sindico_exclui_convite(self):
+        condominio, unidade = criar_base()
+        sindico = criar_sindico(unidade)
+        convite = Convite.objects.create(condominio=condominio, unidade=unidade)
+        self.client.force_login(sindico)
+
+        resposta = self.client.post(
+            reverse(
+                "convite_excluir",
+                kwargs={"slug": condominio.slug, "pk": convite.pk},
+            )
+        )
+
+        self.assertRedirects(
+            resposta,
+            reverse("convites", kwargs={"slug": condominio.slug}),
+        )
+        self.assertFalse(Convite.objects.filter(pk=convite.pk).exists())
+
+
+class RedefinirSenhaTests(TestCase):
+    def test_sindico_gera_senha_temporaria(self):
+        condominio, unidade = criar_base()
+        sindico = criar_sindico(unidade)
+        morador = Usuario.objects.create_user(
+            username="morador", email="morador@example.com", password=SENHA
+        )
+        vinculo = VinculoUnidade.objects.create(usuario=morador, unidade=unidade)
+        self.client.force_login(sindico)
+
+        resposta = self.client.post(
+            reverse(
+                "vinculo_redefinir_senha",
+                kwargs={"slug": condominio.slug, "pk": vinculo.pk},
+            )
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Senha temporária")
+        encontrada = re.search(rb">([A-Za-z2-9]{10})</code>", resposta.content)
+        self.assertIsNotNone(encontrada)
+        morador.refresh_from_db()
+        self.assertTrue(morador.check_password(encontrada.group(1).decode()))
 
 
 class MeusCondominiosTests(TestCase):

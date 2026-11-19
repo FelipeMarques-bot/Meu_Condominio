@@ -50,9 +50,19 @@ urlpatterns = [
     ),
     path("c/<slug:slug>/convites/", views.convites, name="convites"),
     path(
+        "c/<slug:slug>/convites/<int:pk>/excluir/",
+        views.convite_excluir,
+        name="convite_excluir",
+    ),
+    path(
         "c/<slug:slug>/vinculos/<int:pk>/remover/",
         views.vinculo_remover,
         name="vinculo_remover",
+    ),
+    path(
+        "c/<slug:slug>/vinculos/<int:pk>/senha/",
+        views.vinculo_redefinir_senha,
+        name="vinculo_redefinir_senha",
     ),
     path("c/<slug:slug>/convite/<uuid:token>/", views.usar_convite, name="usar_convite"),
 ]

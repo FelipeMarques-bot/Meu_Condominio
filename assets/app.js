@@ -177,6 +177,28 @@ document.addEventListener("click", async (evento) => {
   }
 });
 
+document.querySelectorAll('input[type="password"]').forEach((campo) => {
+  const pai = campo.parentElement;
+  if (!pai || pai.querySelector(":scope > .olho-senha")) return;
+
+  pai.classList.add("campo-senha");
+  const botao = document.createElement("button");
+  botao.type = "button";
+  botao.className = "olho-senha";
+  botao.textContent = "Mostrar";
+  botao.setAttribute("aria-label", "Mostrar senha");
+  botao.setAttribute("aria-pressed", "false");
+
+  botao.addEventListener("click", () => {
+    const visivel = campo.type === "text";
+    campo.type = visivel ? "password" : "text";
+    botao.textContent = visivel ? "Mostrar" : "Ocultar";
+    botao.setAttribute("aria-pressed", String(!visivel));
+  });
+
+  pai.appendChild(botao);
+});
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {});

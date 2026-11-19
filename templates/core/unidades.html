@@ -75,11 +75,18 @@
                   <p class="truncate text-sm font-semibold">{{ vinculo.usuario.get_full_name|default:vinculo.usuario.username }}</p>
                   <p class="text-xs text-muted">@{{ vinculo.usuario.username }} · {{ vinculo.get_papel_display }}</p>
                 </div>
-                <form method="post" action="{% url 'vinculo_remover' slug=condominio.slug pk=vinculo.pk %}"
-                      onsubmit="return confirm('Desvincular este morador da unidade?');">
-                  {% csrf_token %}
-                  <button type="submit" class="text-xs font-semibold text-danger hover:underline">Remover</button>
-                </form>
+                <div class="flex shrink-0 items-center gap-3">
+                  <form method="post" action="{% url 'vinculo_redefinir_senha' slug=condominio.slug pk=vinculo.pk %}"
+                        onsubmit="return confirm('Gerar uma senha temporária para este morador?');">
+                    {% csrf_token %}
+                    <button type="submit" class="text-xs font-semibold text-muted hover:underline">Redefinir senha</button>
+                  </form>
+                  <form method="post" action="{% url 'vinculo_remover' slug=condominio.slug pk=vinculo.pk %}"
+                        onsubmit="return confirm('Desvincular este morador da unidade?');">
+                    {% csrf_token %}
+                    <button type="submit" class="text-xs font-semibold text-danger hover:underline">Remover</button>
+                  </form>
+                </div>
               </li>
             {% endfor %}
           </ul>

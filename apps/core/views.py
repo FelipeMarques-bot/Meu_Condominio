@@ -36,7 +36,11 @@ from .forms import (
     slug_condominio_unico,
 )
 from .models import Condominio, Plano
-from .notifications import emails_administradores, telegram_configurado
+from .notifications import (
+    emails_administradores,
+    link_whatsapp,
+    telegram_configurado,
+)
 from .permissoes import gestao_required, pode_aprovar, pode_gerir
 
 logger = logging.getLogger(__name__)
@@ -567,6 +571,67 @@ def convites(request, slug):
         request,
         "core/convites.html",
         {"condominio": condominio, "form": form, "itens": itens},
+    )
+
+
+@login_required
+@gestao_required
+def convite_excluir(request, slug, pk):
+    condominio = _condominio(request)
+    if request.method != "POST":
+        raise Http404
+
+    convite = get_object_or_404(Convite, pk=pk, condominio=condominio)
+    rotulo = convite.unidade.rotulo
+    convite.delete()
+    messages.success(request, f"Convite da {rotulo} excluído.")
+    return redirect("convites", slug=condominio.slug)
+
+
+@login_required
+@gestao_required
+def vinculo_redefinir_senha(request, slug, pk):
+    condominio = _condominio(request)
+    if request.method != "POST":
+        raise Http404
+
+    vinculo = get_object_or_404(
+        VinculoUnidade.objects.select_related("usuario", "unidade"),
+        pk=pk,
+        unidade__condominio=condominio,
+    )
+    alvo = vinculo.usuario
+    if pode_gerir(alvo, condominio) and not request.user.is_superuser:
+        messages.error(
+            request,
+            "Não é possível redefinir a senha de outro administrador por aqui.",
+        )
+        return redirect(
+            "unidade_editar", slug=condominio.slug, pk=vinculo.unidade.pk
+        )
+
+    alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
+    senha = "".join(secrets.choice(alfabeto) for _ in range(10))
+    alvo.set_password(senha)
+    alvo.save(update_fields=["password"])
+
+    texto = (
+        f"Oi! Seu acesso ao {condominio.nome} foi atualizado.\n"
+        f"Usuário: {alvo.username}\n"
+        f"Senha temporária: {senha}\n"
+        f"Entre em {request.build_absolute_uri(reverse('login'))} e troque a senha."
+    )
+    return render(
+        request,
+        "core/senha_temporaria.html",
+        {
+            "condominio": condominio,
+            "alvo": alvo,
+            "unidade": vinculo.unidade,
+            "senha": senha,
+            "mensagem": texto,
+            "whatsapp": link_whatsapp(alvo.telefone, texto),
+        },
     )
 
 
