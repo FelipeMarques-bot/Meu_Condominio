@@ -14,7 +14,10 @@
         Seus dados, vínculos com o {{ condominio.nome }} e segurança do acesso.
       </p>
     </div>
-    <a href="{% url 'agenda' slug=condominio.slug %}" class="btn btn-ghost w-fit">Voltar para a agenda</a>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'meus_condominios' %}" class="btn btn-ghost w-fit">Meus condomínios</a>
+      <a href="{% url 'agenda' slug=condominio.slug %}" class="btn btn-ghost w-fit">Voltar para a agenda</a>
+    </div>
   </div>
 
   <section class="card mt-8 p-6">
@@ -33,11 +36,18 @@
         <dt class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">E-mail</dt>
         <dd class="mt-1 text-sm">{{ user.email|default:"Não informado" }}</dd>
       </div>
-      <div>
-        <dt class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">Telefone</dt>
-        <dd class="mt-1 text-sm">{{ user.telefone|default:"Não informado" }}</dd>
-      </div>
     </dl>
+
+    <form method="post" class="mt-6 rounded-2xl border border-line bg-white/60 p-4">
+      {% csrf_token %}
+      <label for="{{ form_telefone.telefone.id_for_label }}" class="text-xs font-semibold text-muted">{{ form_telefone.telefone.label }}</label>
+      <div class="mt-1 flex flex-col gap-2 sm:flex-row">
+        <div class="flex-1">{{ form_telefone.telefone }}</div>
+        <button type="submit" class="btn btn-primary shrink-0 px-4 py-2 text-xs">Salvar celular</button>
+      </div>
+      {% for erro in form_telefone.telefone.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
+      <p class="mt-1 text-[0.7rem] text-muted">{{ form_telefone.telefone.help_text }}</p>
+    </form>
   </section>
 
   <section class="card mt-4 p-6">

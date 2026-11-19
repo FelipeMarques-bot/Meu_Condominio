@@ -37,7 +37,7 @@ from .forms import (
 )
 from .models import Condominio, Plano
 from .notifications import emails_administradores, telegram_configurado
-from .permissoes import gestao_required
+from .permissoes import gestao_required, pode_aprovar, pode_gerir
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +105,39 @@ def landing(request):
                 slug="bela-vista", ativo=True
             ).first(),
         },
+    )
+
+
+@login_required
+def meus_condominios(request):
+    vinculos = (
+        request.user.vinculos.filter(ativo=True)
+        .select_related("unidade__condominio")
+        .order_by("unidade__condominio__nome", "pk")
+    )
+    mapa = {}
+    for vinculo in vinculos:
+        condominio = vinculo.unidade.condominio
+        item = mapa.setdefault(
+            condominio.pk,
+            {"condominio": condominio, "papeis": [], "unidades": []},
+        )
+        papel = vinculo.get_papel_display()
+        if papel not in item["papeis"]:
+            item["papeis"].append(papel)
+        if not vinculo.unidade.administrativa:
+            item["unidades"].append(vinculo.unidade.rotulo)
+
+    itens = list(mapa.values())
+    for item in itens:
+        condominio = item["condominio"]
+        item["pode_gerir"] = pode_gerir(request.user, condominio)
+        item["pode_aprovar"] = pode_aprovar(request.user, condominio)
+
+    return render(
+        request,
+        "core/meus_condominios.html",
+        {"itens": itens},
     )
 
 
@@ -196,14 +229,22 @@ class EntrarView(LoginView):
         usuario = self.request.user
         if usuario.is_superuser:
             return reverse("plataforma")
-        vinculo = (
+        vinculos = list(
             usuario.vinculos.filter(ativo=True)
             .select_related("unidade__condominio")
             .order_by("pk")
-            .first()
         )
-        if vinculo is not None:
-            return reverse("agenda", args=[vinculo.unidade.condominio.slug])
+        papeis_gestao = {
+            VinculoUnidade.Papel.SINDICO,
+            VinculoUnidade.Papel.ADMINISTRADORA,
+        }
+        for vinculo in vinculos:
+            if vinculo.papel in papeis_gestao:
+                return reverse("gestao", args=[vinculo.unidade.condominio.slug])
+        if vinculos:
+            return reverse(
+                "agenda", args=[vinculos[0].unidade.condominio.slug]
+            )
         return reverse("landing")
 
 
@@ -217,10 +258,23 @@ def minha_conta(request, slug):
         .select_related("unidade")
         .order_by("unidade__bloco", "unidade__numero")
     )
+    form_telefone = TelefoneForm(
+        request.POST or None, initial={"telefone": request.user.telefone}
+    )
+    if request.method == "POST" and form_telefone.is_valid():
+        request.user.telefone = form_telefone.cleaned_data["telefone"]
+        request.user.save(update_fields=["telefone"])
+        messages.success(request, "Celular atualizado. Você receberá os avisos.")
+        return redirect("minha_conta", slug=condominio.slug)
+
     return render(
         request,
         "core/minha_conta.html",
-        {"condominio": condominio, "vinculos": vinculos},
+        {
+            "condominio": condominio,
+            "vinculos": vinculos,
+            "form_telefone": form_telefone,
+        },
     )
 
 

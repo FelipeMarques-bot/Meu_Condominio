@@ -280,3 +280,31 @@ class VinculoRemoverTests(TestCase):
             ),
         )
         self.assertFalse(VinculoUnidade.objects.filter(pk=vinculo.pk).exists())
+
+
+class MeusCondominiosTests(TestCase):
+    def test_sindico_ve_o_condominio_na_lista(self):
+        condominio, unidade = criar_base()
+        sindico = criar_sindico(unidade)
+        self.client.force_login(sindico)
+
+        resposta = self.client.get(reverse("meus_condominios"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, condominio.nome)
+        self.assertContains(resposta, "Gerenciar")
+
+    def test_login_do_sindico_vai_para_a_gestao(self):
+        condominio, unidade = criar_base()
+        sindico = criar_sindico(unidade)
+
+        resposta = self.client.post(
+            reverse("login"),
+            {"username": sindico.username, "password": SENHA},
+        )
+
+        self.assertRedirects(
+            resposta,
+            reverse("gestao", kwargs={"slug": condominio.slug}),
+            fetch_redirect_response=False,
+        )

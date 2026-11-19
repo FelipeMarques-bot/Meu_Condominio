@@ -10,6 +10,7 @@ urlpatterns = [
     path("tarefas/prazos/<str:token>/", views.tarefas_prazos, name="tarefas_prazos"),
     path("criar/", views.criar_condominio, name="criar_condominio"),
     path("entrar/", views.EntrarView.as_view(), name="login"),
+    path("meus-condominios/", views.meus_condominios, name="meus_condominios"),
     path("sair/", auth_views.LogoutView.as_view(), name="logout"),
     path("plataforma/entrar/", views.plataforma_entrar, name="plataforma_entrar"),
     path("plataforma/", views.plataforma_painel, name="plataforma"),

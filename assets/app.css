@@ -17,7 +17,7 @@
   --color-sand: #e7c9a9;
   --color-sage: #8fa98b;
   --color-line: #e5ded3;
-  --color-muted: #5c6b6a;
+  --color-muted: #4d5d5b;
   --color-ok: #2e7d5b;
   --color-warn: #b8792a;
   --color-danger: #b23a3a;
@@ -85,7 +85,7 @@
   }
 
   .field {
-    @apply w-full rounded-xl border border-line bg-white px-4 py-3 text-sm text-ink placeholder:text-muted/60 focus:border-lagoon/40 focus:outline-none;
+    @apply w-full rounded-xl border border-line bg-white px-4 py-3 text-sm text-ink placeholder:text-muted/80 focus:border-lagoon/40 focus:outline-none;
   }
 
   .calendario-papel {

@@ -25,6 +25,37 @@
     {% endif %}
   </div>
 
+  {% if not qtd_locais or not qtd_unidades %}
+    <section class="mt-8 rounded-3xl border border-lagoon/30 bg-lagoon/5 p-6 sm:p-7">
+      <p class="eyebrow">Primeiros passos</p>
+      <h2 class="mt-2 font-display text-2xl">Seu condomínio já existe. Falta abrir a agenda.</h2>
+      <p class="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+        Em três passos o morador já consegue reservar. Você pode voltar aqui a qualquer momento.
+      </p>
+      <div class="mt-6 grid gap-3 sm:grid-cols-3">
+        <a href="{% url 'identidade' slug=condominio.slug %}" class="rounded-2xl border border-line bg-white/70 p-4 transition hover:border-lagoon/40">
+          <span class="text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-muted">1 · Identidade</span>
+          <p class="mt-2 text-sm font-semibold text-ink">Logo e nome do condomínio</p>
+          <p class="mt-1 text-xs text-muted">O que o morador vê ao entrar.</p>
+        </a>
+        <a href="{% url 'locais' slug=condominio.slug %}" class="rounded-2xl border {% if not qtd_locais %}border-lagoon/50 bg-white{% else %}border-line bg-white/70{% endif %} p-4 transition hover:border-lagoon/40">
+          <span class="text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-muted">2 · Espaços</span>
+          <p class="mt-2 text-sm font-semibold text-ink">Salão, quiosque, churrasqueira</p>
+          <p class="mt-1 text-xs text-muted">{% if qtd_locais %}{{ qtd_locais }} cadastrado{{ qtd_locais|pluralize }}{% else %}Cadastre o primeiro espaço{% endif %}</p>
+        </a>
+        <a href="{% url 'convites' slug=condominio.slug %}" class="rounded-2xl border border-line bg-white/70 p-4 transition hover:border-lagoon/40">
+          <span class="text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-muted">3 · Moradores</span>
+          <p class="mt-2 text-sm font-semibold text-ink">Crie unidades e convites</p>
+          <p class="mt-1 text-xs text-muted">Cada morador entra pelo próprio celular.</p>
+        </a>
+      </div>
+      <div class="mt-5 flex flex-wrap gap-2">
+        <a href="{% url 'locais' slug=condominio.slug %}" class="btn btn-primary px-4 py-2 text-xs">{% if qtd_locais %}Gerenciar espaços{% else %}Cadastrar primeiro espaço{% endif %}</a>
+        <a href="{% url 'unidades' slug=condominio.slug %}" class="btn btn-ghost px-4 py-2 text-xs">Cadastrar unidades</a>
+      </div>
+    </section>
+  {% endif %}
+
   <div class="anim-lista mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     <a href="{% url 'locais' slug=condominio.slug %}" class="card group p-6 transition hover:border-lagoon/40">
       <p class="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-muted">Espaços</p>
