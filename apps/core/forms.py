@@ -306,6 +306,11 @@ class CondominioDoUsuarioForm(forms.Form):
             attrs={**CAMPO_TEXTO, "placeholder": "jardim-das-flores"}
         ),
     )
+    dispositivo = forms.CharField(
+        required=False,
+        max_length=512,
+        widget=forms.HiddenInput(attrs={"data-dispositivo": ""}),
+    )
 
     def clean_slug(self):
         return slugify(self.cleaned_data.get("slug") or "")
@@ -329,6 +334,11 @@ class OnboardingForm(CadastroConviteForm):
         widget=forms.TextInput(
             attrs={**CAMPO_TEXTO, "placeholder": "jardim-das-flores"}
         ),
+    )
+    dispositivo = forms.CharField(
+        required=False,
+        max_length=512,
+        widget=forms.HiddenInput(attrs={"data-dispositivo": ""}),
     )
 
     def __init__(self, *args, **kwargs):
@@ -358,10 +368,26 @@ class PagamentoPlanoForm(ComprovanteForm):
         empty_label=None,
         widget=forms.Select(attrs=CAMPO_TEXTO),
     )
+    dia_vencimento = forms.TypedChoiceField(
+        label="Dia do vencimento",
+        choices=[(dia, f"Dia {dia} de cada mês") for dia in range(1, 29)],
+        coerce=int,
+        empty_value=None,
+        help_text="Escolha um dia entre 1 e 28. O acesso continua por 5 dias após o vencimento.",
+        widget=forms.Select(attrs=CAMPO_TEXTO),
+    )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, condominio=None, **kwargs):
         super().__init__(*args, **kwargs)
+        from django.utils import timezone
+
         self.fields["plano"].queryset = Plano.objects.filter(ativo=True).order_by(
             "ordem", "preco_mensal"
         )
         self.fields["comprovante"].label = "Comprovante do Pix"
+        if condominio and not self.is_bound:
+            self.fields["dia_vencimento"].initial = (
+                condominio.dia_vencimento
+                or (condominio.vencimento_em and condominio.vencimento_em.day)
+                or min(timezone.localdate().day, 28)
+            )

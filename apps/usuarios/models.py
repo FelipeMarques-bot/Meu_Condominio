@@ -14,6 +14,7 @@ def expiracao_padrao():
 
 class Usuario(AbstractUser):
     telefone = models.CharField(max_length=20, blank=True)
+    email_confirmado_em = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = "usuário"

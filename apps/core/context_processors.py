@@ -29,6 +29,7 @@ def marca(request):
         "contato_email": settings.CONTATO_EMAIL,
         "plano_pix_chave": settings.PLANO_PIX_CHAVE,
         "plano_whatsapp": settings.PLANO_WHATSAPP,
+        "captcha_site_key": settings.TURNSTILE_SITE_KEY,
         "condominio_atual": condominio,
         "papel_no_condominio": _papel_no_condominio(usuario, condominio),
         "sou_admin": bool(

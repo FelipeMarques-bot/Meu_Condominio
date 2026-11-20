@@ -1,6 +1,6 @@
 import logging
 import secrets
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from functools import wraps
 from pathlib import Path
 from uuid import uuid4
@@ -24,6 +24,12 @@ from apps.reservas.models import Local
 from apps.usuarios.forms import CadastroConviteForm, ConviteForm, TelefoneForm
 from apps.usuarios.models import Convite, Unidade, Usuario, VinculoUnidade
 
+from .captcha import verificar_captcha
+from .confirmacao_email import (
+    confirmar,
+    enviar_confirmacao,
+    usuario_do_token,
+)
 from .forms import (
     CondominioDoUsuarioForm,
     ConfiguracaoForm,
@@ -43,7 +49,12 @@ from .notifications import (
     telegram_configurado,
 )
 from .permissoes import gestao_required, pode_aprovar, pode_gerir
-from .trial import hashes_do_cadastro, trial_ja_usado
+from .trial import (
+    hashes_do_cadastro,
+    iniciar_trial,
+    renovar_vencimento,
+    trial_ja_usado,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +173,10 @@ def criar_condominio(request):
         if request.method == "POST" and form.is_valid():
             dados = form.cleaned_data
             hashes = hashes_do_cadastro(
-                request, request.user.telefone, request.user.email
+                request,
+                request.user.telefone,
+                request.user.email,
+                dados.get("dispositivo", ""),
             )
             if trial_ja_usado(hashes):
                 form.add_error(None, _aviso_trial_usado())
@@ -172,10 +186,9 @@ def criar_condominio(request):
                         nome=dados["nome"],
                         slug=slug_condominio_unico(dados["nome"], dados["slug"]),
                         plano=Plano.para_quantidade(1),
-                        trial_ate=timezone.now()
-                        + timedelta(days=settings.TRIAL_DIAS),
                         **hashes,
                     )
+                    iniciar_trial(condominio)
                     unidade = Unidade.objects.create(
                         condominio=condominio,
                         numero="Administração",
@@ -201,8 +214,16 @@ def criar_condominio(request):
     form = OnboardingForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         dados = form.cleaned_data
-        hashes = hashes_do_cadastro(request, dados["telefone"], dados["email"])
-        if trial_ja_usado(hashes):
+        captcha_ok, captcha_erro = verificar_captcha(request)
+        hashes = hashes_do_cadastro(
+            request,
+            dados["telefone"],
+            dados["email"],
+            dados.get("dispositivo", ""),
+        )
+        if not captcha_ok:
+            form.add_error(None, captcha_erro)
+        elif trial_ja_usado(hashes):
             form.add_error(None, _aviso_trial_usado())
         else:
             with transaction.atomic():
@@ -210,7 +231,6 @@ def criar_condominio(request):
                     nome=dados["condominio"],
                     slug=slug_condominio_unico(dados["condominio"], dados["slug"]),
                     plano=Plano.para_quantidade(1),
-                    trial_ate=timezone.now() + timedelta(days=settings.TRIAL_DIAS),
                     **hashes,
                 )
                 unidade = Unidade.objects.create(
@@ -218,12 +238,16 @@ def criar_condominio(request):
                     numero="Administração",
                     administrativa=True,
                 )
+                exigir_confirmacao = settings.EXIGIR_CONFIRMACAO_EMAIL
                 usuario = Usuario.objects.create_user(
                     username=dados["username"],
                     email=dados["email"],
                     password=dados["senha"],
                     first_name=dados["nome"],
                     telefone=dados["telefone"],
+                    email_confirmado_em=(
+                        None if exigir_confirmacao else timezone.now()
+                    ),
                 )
                 VinculoUnidade.objects.create(
                     usuario=usuario,
@@ -231,6 +255,22 @@ def criar_condominio(request):
                     papel=VinculoUnidade.Papel.SINDICO,
                 )
             login(request, usuario)
+            if exigir_confirmacao:
+                enviado = enviar_confirmacao(request, usuario)
+                if enviado:
+                    messages.info(
+                        request,
+                        "Enviamos um link de confirmação para o seu e-mail. "
+                        "Confirme para iniciar o teste gratuito.",
+                    )
+                else:
+                    messages.warning(
+                        request,
+                        "Não foi possível enviar o e-mail agora. "
+                        "Use o botão de reenviar na próxima tela.",
+                    )
+                return redirect("confirmar_email_pendente")
+            iniciar_trial(condominio)
             messages.success(
                 request,
                 f"{condominio.nome} está no ar! Você tem {settings.TRIAL_DIAS} "
@@ -239,6 +279,59 @@ def criar_condominio(request):
             return redirect("gestao", slug=condominio.slug)
 
     return render(request, "core/criar_condominio.html", {"form": form})
+
+
+@login_required
+def confirmar_email_pendente(request):
+    if request.user.email_confirmado_em:
+        return redirect("meus_condominios")
+    return render(
+        request,
+        "core/confirmar_email.html",
+        {"email": request.user.email, "pendente": True},
+    )
+
+
+@login_required
+def reenviar_confirmacao_email(request):
+    if request.method != "POST":
+        raise Http404
+    if request.user.email_confirmado_em:
+        messages.info(request, "Seu e-mail já está confirmado.")
+        return redirect("meus_condominios")
+    agora = timezone.now().timestamp()
+    ultimo = request.session.get("confirmacao_email_enviada_em", 0)
+    if agora - ultimo < 60:
+        messages.info(
+            request, "Aguarde um minuto antes de pedir outro e-mail."
+        )
+        return redirect("confirmar_email_pendente")
+    request.session["confirmacao_email_enviada_em"] = agora
+    enviado = enviar_confirmacao(request, request.user)
+    if enviado:
+        messages.success(request, "Enviamos um novo link de confirmação.")
+    else:
+        messages.error(
+            request,
+            "Não foi possível enviar o e-mail agora. Tente novamente em instantes.",
+        )
+    return redirect("confirmar_email_pendente")
+
+
+def confirmar_email(request, token):
+    usuario, erro = usuario_do_token(token)
+    if usuario is None:
+        return render(
+            request,
+            "core/confirmar_email.html",
+            {"erro": erro, "pendente": False},
+            status=400,
+        )
+    confirmar(usuario)
+    messages.success(request, "E-mail confirmado. Seu teste gratuito começou!")
+    if request.user.is_authenticated and request.user.pk == usuario.pk:
+        return redirect("meus_condominios")
+    return redirect("login")
 
 
 @login_required
@@ -269,13 +362,16 @@ def assinatura(request, slug):
                 "Aguarde a liberação.",
             )
             return redirect("assinatura", slug=condominio.slug)
-        form = PagamentoPlanoForm(request.POST, request.FILES)
+        form = PagamentoPlanoForm(
+            request.POST, request.FILES, condominio=condominio
+        )
         if form.is_valid():
             plano = form.cleaned_data["plano"]
             PagamentoPlano.objects.create(
                 condominio=condominio,
                 plano=plano,
                 valor=plano.preco_mensal,
+                dia_vencimento=form.cleaned_data["dia_vencimento"],
                 comprovante=form.cleaned_data["comprovante"],
             )
             messages.success(
@@ -285,7 +381,7 @@ def assinatura(request, slug):
             return redirect("assinatura", slug=condominio.slug)
 
     if form is None:
-        form = PagamentoPlanoForm()
+        form = PagamentoPlanoForm(condominio=condominio)
 
     return render(
         request,
@@ -819,6 +915,7 @@ def usar_convite(request, slug, token):
                 password=form.cleaned_data["senha"],
                 first_name=form.cleaned_data["nome"],
                 telefone=form.cleaned_data["telefone"],
+                email_confirmado_em=timezone.now(),
             )
             VinculoUnidade.objects.create(
                 usuario=usuario,
@@ -985,21 +1082,26 @@ def plataforma_pagamento_confirmar(request, pk):
     if acao == "confirmar":
         pagamento.status = PagamentoPlano.Status.CONFIRMADO
         condominio = pagamento.condominio
-        base = timezone.now()
-        if condominio.trial_ate and condominio.trial_ate > base:
-            base = condominio.trial_ate
-        if (
-            condominio.assinatura_valida_ate
-            and condominio.assinatura_valida_ate > base
-        ):
-            base = condominio.assinatura_valida_ate
-        condominio.assinatura_valida_ate = base + timedelta(
-            days=settings.ASSINATURA_DIAS
+        dia = (
+            pagamento.dia_vencimento
+            or condominio.dia_vencimento
+            or min(timezone.localdate().day, 28)
+        )
+        vencimento = renovar_vencimento(condominio, dia)
+        condominio.vencimento_em = vencimento
+        condominio.dia_vencimento = dia
+        condominio.assinatura_valida_ate = timezone.make_aware(
+            datetime.combine(
+                vencimento + timedelta(days=settings.CARENCIA_DIAS),
+                time.max,
+            )
         )
         condominio.plano = pagamento.plano
         condominio.isento_assinatura = False
         condominio.save(
             update_fields=[
+                "vencimento_em",
+                "dia_vencimento",
                 "assinatura_valida_ate",
                 "plano",
                 "isento_assinatura",
@@ -1007,8 +1109,8 @@ def plataforma_pagamento_confirmar(request, pk):
         )
         messages.success(
             request,
-            f"Plano de {condominio.nome} liberado até "
-            f"{timezone.localtime(condominio.assinatura_valida_ate):%d/%m/%Y}.",
+            f"Plano de {condominio.nome} liberado. Próximo vencimento: "
+            f"{vencimento:%d/%m/%Y}.",
         )
     else:
         pagamento.status = PagamentoPlano.Status.RECUSADO
@@ -1041,19 +1143,28 @@ def plataforma_liberar(request, pk):
         raise Http404
 
     condominio = get_object_or_404(Condominio, pk=pk)
-    base = timezone.now()
-    if condominio.trial_ate and condominio.trial_ate > base:
-        base = condominio.trial_ate
-    if condominio.assinatura_valida_ate and condominio.assinatura_valida_ate > base:
-        base = condominio.assinatura_valida_ate
-    condominio.assinatura_valida_ate = base + timedelta(
-        days=settings.ASSINATURA_DIAS
+    dia = condominio.dia_vencimento or min(timezone.localdate().day, 28)
+    vencimento = renovar_vencimento(condominio, dia)
+    condominio.vencimento_em = vencimento
+    condominio.dia_vencimento = dia
+    condominio.assinatura_valida_ate = timezone.make_aware(
+        datetime.combine(
+            vencimento + timedelta(days=settings.CARENCIA_DIAS),
+            time.max,
+        )
     )
     condominio.isento_assinatura = False
-    condominio.save(update_fields=["assinatura_valida_ate", "isento_assinatura"])
+    condominio.save(
+        update_fields=[
+            "vencimento_em",
+            "dia_vencimento",
+            "assinatura_valida_ate",
+            "isento_assinatura",
+        ]
+    )
     messages.success(
         request,
-        f"{condominio.nome} liberado até "
-        f"{timezone.localtime(condominio.assinatura_valida_ate):%d/%m/%Y}.",
+        f"{condominio.nome} liberado. Próximo vencimento: "
+        f"{vencimento:%d/%m/%Y}.",
     )
     return redirect("plataforma")

@@ -1,4 +1,5 @@
 import secrets
+from datetime import timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -64,7 +65,17 @@ class Condominio(models.Model):
     assinatura_valida_ate = models.DateTimeField(
         null=True,
         blank=True,
-        help_text="Fim do período pago. Depois disso o condomínio fica suspenso.",
+        help_text="Fim do período pago, incluindo a carência.",
+    )
+    vencimento_em = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Próximo vencimento mensal do plano.",
+    )
+    dia_vencimento = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="Dia mensal escolhido para vencimento (1 a 28).",
     )
     isento_assinatura = models.BooleanField(
         default=False,
@@ -73,6 +84,7 @@ class Condominio(models.Model):
     trial_ip_hash = models.CharField(max_length=64, blank=True)
     trial_telefone_hash = models.CharField(max_length=64, blank=True)
     trial_email_hash = models.CharField(max_length=64, blank=True)
+    trial_dispositivo_hash = models.CharField(max_length=64, blank=True)
     quantidade_unidades = models.PositiveIntegerField(
         default=0,
         help_text=(
@@ -108,24 +120,68 @@ class Condominio(models.Model):
         )
 
     @property
-    def acesso_liberado(self) -> bool:
-        sem_controle = self.trial_ate is None and self.assinatura_valida_ate is None
+    def carencia_dias(self) -> int:
+        return max(0, int(getattr(settings, "CARENCIA_DIAS", 5)))
+
+    @property
+    def sem_controle(self) -> bool:
         return bool(
-            self.ativo
-            and (
-                self.isento_assinatura
-                or sem_controle
-                or self.em_trial
-                or self.assinatura_ativa
-            )
+            self.trial_ate is None
+            and self.assinatura_valida_ate is None
+            and self.vencimento_em is None
         )
 
     @property
+    def fim_carencia(self):
+        if not self.vencimento_em:
+            return None
+        return self.vencimento_em + timedelta(days=self.carencia_dias)
+
+    @property
+    def dias_de_atraso(self) -> int:
+        if not self.vencimento_em:
+            return 0
+        return max(0, (timezone.localdate() - self.vencimento_em).days)
+
+    @property
+    def dias_para_vencimento(self) -> int:
+        if not self.vencimento_em:
+            return 0
+        return (self.vencimento_em - timezone.localdate()).days
+
+    @property
+    def dias_restantes_carencia(self) -> int:
+        if not self.fim_carencia:
+            return 0
+        return max(0, (self.fim_carencia - timezone.localdate()).days)
+
+    @property
+    def em_carencia(self) -> bool:
+        return bool(self.dias_de_atraso > 0 and self.acesso_liberado)
+
+    @property
+    def acesso_liberado(self) -> bool:
+        if not self.ativo:
+            return False
+        if self.isento_assinatura or self.sem_controle:
+            return True
+        if self.vencimento_em:
+            return timezone.localdate() <= self.fim_carencia
+        return bool(self.em_trial or self.assinatura_ativa)
+
+    @property
     def trial_expirado(self) -> bool:
-        return bool(self.trial_ate and not self.em_trial and not self.assinatura_ativa)
+        return bool(
+            self.trial_ate
+            and not self.em_trial
+            and not self.assinatura_ativa
+            and not self.acesso_liberado
+        )
 
     @property
     def dias_de_assinatura(self) -> int:
+        if self.vencimento_em:
+            return max(0, self.dias_para_vencimento)
         if not self.assinatura_ativa:
             return 0
         return max(0, (self.assinatura_valida_ate - timezone.now()).days)
@@ -285,6 +341,7 @@ class PagamentoPlano(models.Model):
         Plano, on_delete=models.SET_NULL, null=True, blank=True
     )
     valor = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    dia_vencimento = models.PositiveSmallIntegerField(null=True, blank=True)
     comprovante = models.FileField(
         upload_to="planos/comprovantes/",
         storage=armazenamento_privado,

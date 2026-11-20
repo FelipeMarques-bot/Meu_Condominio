@@ -70,9 +70,15 @@ services:
         value: "30"
       - key: ASSINATURA_DIAS
         value: "30"
+      - key: CARENCIA_DIAS
+        value: "5"
       - key: PLANO_PIX_CHAVE
         sync: false
       - key: PLANO_WHATSAPP
+        sync: false
+      - key: TURNSTILE_SITE_KEY
+        sync: false
+      - key: TURNSTILE_SECRET_KEY
         sync: false
 
 databases:

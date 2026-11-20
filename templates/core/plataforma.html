@@ -107,13 +107,18 @@
               <p class="mt-1 text-[0.7rem] text-muted">
                 {% if item.isento_assinatura %}
                   Isento de cobrança
-                {% elif item.assinatura_ativa %}
-                  Plano pago até {{ item.assinatura_valida_ate|date:"d/m/Y" }}
-                  ({{ item.dias_de_assinatura }} dia{{ item.dias_de_assinatura|pluralize }})
+                {% elif not item.acesso_liberado %}
+                  Suspenso desde {{ item.fim_carencia|date:"d/m/Y" }}
                 {% elif item.em_trial %}
                   Teste até {{ item.trial_ate|date:"d/m/Y" }} ({{ item.dias_de_trial }} dia{{ item.dias_de_trial|pluralize }} restante{{ item.dias_de_trial|pluralize }})
-                {% elif item.trial_ate %}
-                  Suspenso desde {{ item.trial_ate|date:"d/m/Y" }}
+                {% elif item.dias_de_atraso > 0 %}
+                  Em atraso há {{ item.dias_de_atraso }} dia{{ item.dias_de_atraso|pluralize }}
+                  — carência até {{ item.fim_carencia|date:"d/m/Y" }}
+                {% elif item.vencimento_em %}
+                  Plano pago até {{ item.vencimento_em|date:"d/m/Y" }}
+                  ({{ item.dias_para_vencimento }} dia{{ item.dias_para_vencimento|pluralize }})
+                {% elif item.assinatura_ativa %}
+                  Plano pago até {{ item.assinatura_valida_ate|date:"d/m/Y" }}
                 {% else %}
                   Sem prazo de teste
                 {% endif %}

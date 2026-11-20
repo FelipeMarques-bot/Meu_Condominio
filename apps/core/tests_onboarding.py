@@ -1,12 +1,15 @@
 from datetime import timedelta
+from urllib.parse import urlsplit
 
-from django.test import TestCase
+from django.core import mail
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.usuarios.models import Unidade, Usuario, VinculoUnidade
 
 from .models import Condominio, ConfiguracaoCondominio
+from .trial import hash_dispositivo
 
 SENHA = "Senha-Forte-2026"
 
@@ -198,3 +201,88 @@ class OnboardingTests(TestCase):
         condominio = Condominio.objects.get()
         self.assertIsNotNone(condominio.trial_ate)
         self.assertLessEqual(condominio.trial_ate - timezone.now(), timedelta(days=14))
+
+
+@override_settings(
+    EXIGIR_CONFIRMACAO_EMAIL=True,
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+)
+class ConfirmacaoEmailTests(TestCase):
+    def test_cadastro_publico_so_libera_trial_depois_de_confirmar(self):
+        resposta = self.client.post(reverse("criar_condominio"), dados())
+
+        self.assertRedirects(resposta, reverse("confirmar_email_pendente"))
+        self.assertEqual(len(mail.outbox), 1)
+        usuario = Usuario.objects.get(username="ana")
+        self.assertIsNone(usuario.email_confirmado_em)
+        condominio = Condominio.objects.get()
+        self.assertIsNone(condominio.trial_ate)
+
+        link = [
+            linha
+            for linha in mail.outbox[0].body.splitlines()
+            if "/confirmar-email/" in linha
+        ][0]
+        self.client.get(urlsplit(link).path)
+
+        usuario.refresh_from_db()
+        condominio.refresh_from_db()
+        self.assertIsNotNone(usuario.email_confirmado_em)
+        self.assertIsNotNone(condominio.trial_ate)
+        self.assertIsNotNone(condominio.vencimento_em)
+
+    def test_usuario_nao_confirmado_nao_acessa_gestao(self):
+        self.client.post(reverse("criar_condominio"), dados())
+
+        resposta = self.client.get(reverse("meus_condominios"))
+
+        self.assertRedirects(resposta, reverse("confirmar_email_pendente"))
+
+    def test_token_invalido_nao_confirma(self):
+        resposta = self.client.get(
+            reverse("confirmar_email", args=["token-invalido"])
+        )
+
+        self.assertEqual(resposta.status_code, 400)
+        self.assertContains(resposta, "inv", status_code=400)
+
+
+class CaptchaTests(TestCase):
+    @override_settings(TURNSTILE_SITE_KEY="site", TURNSTILE_SECRET_KEY="segredo")
+    def test_sem_captcha_nao_cria_condominio(self):
+        resposta = self.client.post(reverse("criar_condominio"), dados())
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "rob")
+        self.assertEqual(Condominio.objects.count(), 0)
+
+    def test_chave_publica_aparece_no_formulario(self):
+        with self.settings(TURNSTILE_SITE_KEY="site-publico"):
+            resposta = self.client.get(reverse("criar_condominio"))
+
+        self.assertContains(resposta, "site-publico")
+
+
+class DispositivoTests(TestCase):
+    def test_bloqueia_novo_trial_do_mesmo_dispositivo(self):
+        Condominio.objects.create(
+            nome="Antigo",
+            slug="antigo",
+            trial_ate=timezone.now() - timedelta(days=1),
+            trial_dispositivo_hash=hash_dispositivo("aparelho-123"),
+        )
+
+        resposta = self.client.post(
+            reverse("criar_condominio"),
+            dados(
+                username="outra",
+                email="outra@example.com",
+                telefone="(47) 98888-1111",
+                dispositivo="aparelho-123",
+            ),
+            REMOTE_ADDR="198.51.100.7",
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(Condominio.objects.count(), 1)
+        self.assertContains(resposta, "teste gratuito")

@@ -10,6 +10,21 @@ urlpatterns = [
     path("tarefas/prazos/<str:token>/", views.tarefas_prazos, name="tarefas_prazos"),
     path("criar/", views.criar_condominio, name="criar_condominio"),
     path("entrar/", views.EntrarView.as_view(), name="login"),
+    path(
+        "confirmar-email/",
+        views.confirmar_email_pendente,
+        name="confirmar_email_pendente",
+    ),
+    path(
+        "confirmar-email/reenviar/",
+        views.reenviar_confirmacao_email,
+        name="reenviar_confirmacao_email",
+    ),
+    path(
+        "confirmar-email/<str:token>/",
+        views.confirmar_email,
+        name="confirmar_email",
+    ),
     path("meus-condominios/", views.meus_condominios, name="meus_condominios"),
     path("sair/", auth_views.LogoutView.as_view(), name="logout"),
     path("plataforma/entrar/", views.plataforma_entrar, name="plataforma_entrar"),

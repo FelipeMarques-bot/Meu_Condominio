@@ -205,6 +205,49 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+const formularioDispositivo = document.querySelector("form[data-fingerprint]");
+if (formularioDispositivo) {
+  const campoDispositivo = formularioDispositivo.querySelector('input[name="dispositivo"]');
+  let identificador = "";
+  try {
+    identificador = localStorage.getItem("mc-dispositivo") || "";
+    if (!identificador) {
+      identificador = window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now()) + Math.random();
+      localStorage.setItem("mc-dispositivo", identificador);
+    }
+  } catch (_) {
+    identificador = String(Date.now()) + Math.random();
+  }
+
+  let tela = "";
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 220;
+    canvas.height = 40;
+    const contexto = canvas.getContext("2d");
+    contexto.textBaseline = "top";
+    contexto.font = "16px Arial";
+    contexto.fillStyle = "#0f766e";
+    contexto.fillText("Meu Condom?nio", 2, 4);
+    tela = canvas.toDataURL().slice(-80);
+  } catch (_) {
+    tela = "";
+  }
+
+  if (campoDispositivo) {
+    campoDispositivo.value = [
+      identificador,
+      navigator.platform || "",
+      navigator.language || "",
+      screen.width,
+      screen.height,
+      screen.colorDepth,
+      new Date().getTimezoneOffset(),
+      tela,
+    ].join("|").slice(0, 500);
+  }
+}
+
 atualizarBlocosInstalacao();
 Alpine.start();
 

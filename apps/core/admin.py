@@ -28,7 +28,8 @@ class CondominioAdmin(admin.ModelAdmin):
         "nome",
         "slug",
         "plano",
-        "assinatura_valida_ate",
+        "vencimento_em",
+        "dia_vencimento",
         "isento_assinatura",
         "ativo",
         "criado_em",
@@ -36,7 +37,12 @@ class CondominioAdmin(admin.ModelAdmin):
     list_filter = ("ativo", "plano", "isento_assinatura")
     search_fields = ("nome", "slug")
     prepopulated_fields = {"slug": ("nome",)}
-    readonly_fields = ("trial_ip_hash", "trial_telefone_hash", "trial_email_hash")
+    readonly_fields = (
+        "trial_ip_hash",
+        "trial_telefone_hash",
+        "trial_email_hash",
+        "trial_dispositivo_hash",
+    )
     inlines = [ConfiguracaoInline]
 
 

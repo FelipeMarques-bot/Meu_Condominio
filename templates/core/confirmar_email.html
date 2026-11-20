@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Confirme seu e-mail — {{ site_nome }}{% endblock %}
+
+{% block body %}
+<main id="conteudo" class="mx-auto flex min-h-screen w-full max-w-xl flex-col justify-center px-5 py-10 sm:px-8">
+  <a href="{% url 'landing' %}" class="flex w-fit items-center gap-3" aria-label="{{ site_nome }}, início">
+    <span class="grid h-10 w-10 place-items-center rounded-2xl bg-lagoon font-display text-xl text-paper">m</span>
+    <span class="font-display text-lg">{{ site_nome }}</span>
+  </a>
+
+  <section class="card mt-8 p-6 sm:p-8">
+    {% if erro %}
+      <p class="eyebrow text-danger">Link inválido</p>
+      <h1 class="mt-2 font-display text-3xl font-light">Não foi possível confirmar</h1>
+      <p class="mt-3 text-sm leading-relaxed text-muted">{{ erro }}</p>
+      <a href="{% url 'login' %}" class="btn btn-primary mt-6 w-full">Voltar para entrar</a>
+    {% elif pendente %}
+      <p class="eyebrow">Falta só um passo</p>
+      <h1 class="mt-2 font-display text-3xl font-light">Confirme seu e-mail</h1>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        Enviamos um link para <strong class="text-ink">{{ email }}</strong>.
+        Abra a mensagem e clique no link para iniciar seus 14 dias de teste.
+      </p>
+      <p class="mt-2 text-xs leading-relaxed text-muted">
+        Não recebeu? Confira o spam ou reenvie abaixo.
+      </p>
+      <form method="post" action="{% url 'reenviar_confirmacao_email' %}" class="mt-6">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary w-full">Reenviar e-mail</button>
+      </form>
+      <form method="post" action="{% url 'logout' %}" class="mt-3">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ghost w-full">Sair</button>
+      </form>
+      <p class="mt-4 text-center text-[0.7rem] text-muted">
+        Precisa de ajuda? Fale com {{ contato_email }}.
+      </p>
+    {% else %}
+      <p class="eyebrow text-ok">Tudo certo</p>
+      <h1 class="mt-2 font-display text-3xl font-light">E-mail confirmado</h1>
+      <p class="mt-3 text-sm leading-relaxed text-muted">
+        Seu teste gratuito já está valendo. Entre para acessar o seu condomínio.
+      </p>
+      <a href="{% url 'login' %}" class="btn btn-primary mt-6 w-full">Entrar</a>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

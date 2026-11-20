@@ -1,5 +1,6 @@
 import re
 
+from django.conf import settings
 from django.shortcuts import redirect
 
 from .models import Condominio
@@ -36,6 +37,15 @@ class AssinaturaMiddleware:
     """Suspende o acesso ao condomínio quando o teste acabou e não há plano pago."""
 
     ROTAS_LIVRES = {"assinatura", "minha_conta", "trocar_senha"}
+    ROTAS_EMAIL_LIVRES = {
+        "confirmar_email",
+        "confirmar_email_pendente",
+        "reenviar_confirmacao_email",
+        "login",
+        "logout",
+        "plataforma_entrar",
+        "plataforma_sair",
+    }
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -46,9 +56,15 @@ class AssinaturaMiddleware:
     def process_view(self, request, view_func, view_args, view_kwargs):
         if not request.user.is_authenticated or request.user.is_superuser:
             return None
+        nome_rota = getattr(request.resolver_match, "url_name", "")
+        if (
+            getattr(settings, "EXIGIR_CONFIRMACAO_EMAIL", False)
+            and not request.user.email_confirmado_em
+            and nome_rota not in self.ROTAS_EMAIL_LIVRES
+        ):
+            return redirect("confirmar_email_pendente")
         if not view_kwargs.get("slug"):
             return None
-        nome_rota = getattr(request.resolver_match, "url_name", "")
         if nome_rota in self.ROTAS_LIVRES:
             return None
 
