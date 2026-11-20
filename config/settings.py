@@ -223,7 +223,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 VITE_DEV_SERVER = env("VITE_DEV_SERVER")
 
 SITE_NOME = env("SITE_NOME", "Meu Condomínio")
-CONTATO_EMAIL = env("CONTATO_EMAIL", "contato@meucondominio.com.br")
+CONTATO_EMAIL = env(
+    "CONTATO_EMAIL", "labintelligenceappoiments@gmail.com"
+)
 
 TRIAL_DIAS = int(env("TRIAL_DIAS", "14"))
 TRIAL_JANELA_DIAS = int(env("TRIAL_JANELA_DIAS", "30"))
