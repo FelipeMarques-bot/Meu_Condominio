@@ -1,11 +1,11 @@
 import logging
 from datetime import timedelta
 
-from django.conf import settings
 from django.core import signing
-from django.core.mail import send_mail
 from django.urls import reverse
 from django.utils import timezone
+
+from .email import enviar_email
 
 logger = logging.getLogger(__name__)
 
@@ -46,18 +46,16 @@ def enviar_confirmacao(request, usuario) -> bool:
         f"{link}\n\n"
         "O link vale por 3 dias. Se você não criou esta conta, ignore esta mensagem.\n"
     )
-    try:
-        send_mail(
-            "Confirme seu e-mail - Meu Condomínio",
-            corpo,
-            settings.DEFAULT_FROM_EMAIL,
-            [usuario.email],
-            fail_silently=False,
+    enviado = enviar_email(
+        "Confirme seu e-mail - Meu Condomínio",
+        corpo,
+        [usuario.email],
+    )
+    if not enviado:
+        logger.warning(
+            "Falha ao enviar confirmação de e-mail para %s", usuario.pk
         )
-    except Exception:
-        logger.exception("Falha ao enviar confirmação de e-mail para %s", usuario.pk)
-        return False
-    return True
+    return enviado
 
 
 def iniciar_trials_pendentes(usuario) -> int:

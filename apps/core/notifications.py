@@ -5,9 +5,9 @@ import urllib.request
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
 from django.utils import timezone
 
+from .email import enviar_email
 from .models import ConfiguracaoCondominio
 
 logger = logging.getLogger(__name__)
@@ -41,21 +41,7 @@ def _moeda(reserva) -> str:
 
 
 def _enviar_email(assunto: str, corpo: str, destinatarios) -> bool:
-    contatos = [email for email in dict.fromkeys(destinatarios or []) if email]
-    if not contatos:
-        return False
-    try:
-        send_mail(
-            assunto,
-            corpo,
-            settings.DEFAULT_FROM_EMAIL,
-            contatos,
-            fail_silently=False,
-        )
-        return True
-    except Exception:
-        logger.warning("Falha ao enviar e-mail '%s'", assunto, exc_info=True)
-        return False
+    return enviar_email(assunto, corpo, destinatarios)
 
 
 def _configuracao(condominio):
