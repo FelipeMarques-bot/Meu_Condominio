@@ -50,6 +50,11 @@ urlpatterns = [
         name="plataforma_liberar",
     ),
     path(
+        "plataforma/condominios/<int:pk>/excluir/",
+        views.plataforma_condominio_excluir,
+        name="plataforma_condominio_excluir",
+    ),
+    path(
         "plataforma/sair/",
         auth_views.LogoutView.as_view(next_page="plataforma_entrar"),
         name="plataforma_sair",

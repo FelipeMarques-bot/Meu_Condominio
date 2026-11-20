@@ -333,6 +333,49 @@ def notificar_pagamento_analisado(
     _enviar_email(assunto, corpo, emails_administradores(condominio))
 
 
+def notificar_vencimento_plano(condominio, dias: int) -> bool:
+    contatos = emails_administradores(condominio)
+    if not contatos or not condominio.vencimento_em:
+        return False
+    vencimento = condominio.vencimento_em
+    em_teste = bool(
+        condominio.trial_ate
+        and not condominio.assinatura_valida_ate
+        and condominio.trial_ate.date() == vencimento
+    )
+    rotulo = "período gratuito" if em_teste else "plano"
+    if dias == 5:
+        assunto = f"Seu {rotulo} vence em 5 dias - {condominio.nome}"
+        abertura = (
+            f"O {rotulo} do {condominio.nome} vence em 5 dias, "
+            f"em {vencimento:%d/%m/%Y}."
+        )
+        fechamento = "Você ainda tem tempo para pagar e enviar o comprovante."
+    elif dias == 0:
+        assunto = f"Seu {rotulo} vence hoje - {condominio.nome}"
+        abertura = (
+            f"O {rotulo} do {condominio.nome} vence hoje, "
+            f"{vencimento:%d/%m/%Y}."
+        )
+        fechamento = "Envie o comprovante para evitar o bloqueio do acesso."
+    else:
+        assunto = f"Último dia de carência - {condominio.nome}"
+        abertura = (
+            f"Hoje é o último dia de carência do {rotulo} do "
+            f"{condominio.nome}."
+        )
+        fechamento = "Se o pagamento não for confirmado, o acesso será suspenso amanhã."
+    link = f"{settings.SITE_URL}/c/{condominio.slug}/assinatura/"
+    corpo = (
+        f"{abertura}\n\n"
+        f"Vencimento: {vencimento:%d/%m/%Y}\n"
+        f"Carência até: {condominio.fim_carencia:%d/%m/%Y}\n\n"
+        f"{fechamento}\n\n"
+        f"Pague por Pix e envie o comprovante em:\n{link}\n"
+    )
+    return _enviar_email(assunto, corpo, contatos)
+
+
 def link_whatsapp(telefone: str, texto: str) -> str:
     from urllib.parse import quote
 

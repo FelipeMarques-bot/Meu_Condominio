@@ -251,6 +251,36 @@ class PagamentoPlanoTests(TestCase):
         self.assertIn("Comprovante recusado", mail.outbox[0].subject)
 
 
+class ExclusaoCondominioTests(TestCase):
+    def test_dono_exclui_condominio(self):
+        condominio, _, _ = criar_base(trial_ate=timezone.now() + timedelta(days=5))
+        dono = Usuario.objects.create_superuser(
+            username="dono", email="dono@example.com", password=SENHA
+        )
+        self.client.force_login(dono)
+
+        resposta = self.client.post(
+            reverse("plataforma_condominio_excluir", args=[condominio.pk])
+        )
+
+        self.assertRedirects(resposta, reverse("plataforma"))
+        self.assertFalse(Condominio.objects.filter(pk=condominio.pk).exists())
+
+    def test_exclusao_exige_post(self):
+        condominio, _, _ = criar_base(trial_ate=timezone.now() + timedelta(days=5))
+        dono = Usuario.objects.create_superuser(
+            username="dono", email="dono@example.com", password=SENHA
+        )
+        self.client.force_login(dono)
+
+        resposta = self.client.get(
+            reverse("plataforma_condominio_excluir", args=[condominio.pk])
+        )
+
+        self.assertEqual(resposta.status_code, 404)
+        self.assertTrue(Condominio.objects.filter(pk=condominio.pk).exists())
+
+
 class LiberacaoManualTests(TestCase):
     def test_dono_libera_30_dias_sem_comprovante(self):
         condominio, _, sindico = criar_base(

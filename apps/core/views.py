@@ -1137,6 +1137,28 @@ def plataforma_pagamento_confirmar(request, pk):
 
 
 @_plataforma_required
+def plataforma_condominio_excluir(request, pk):
+    if request.method != "POST":
+        raise Http404
+    condominio = get_object_or_404(Condominio, pk=pk)
+    nome = condominio.nome
+    for pagamento in condominio.pagamentos_plano.all():
+        if pagamento.comprovante:
+            try:
+                pagamento.comprovante.delete(save=False)
+            except Exception:
+                logger.warning("Falha ao apagar comprovante", exc_info=True)
+    if condominio.logo:
+        try:
+            condominio.logo.delete(save=False)
+        except Exception:
+            logger.warning("Falha ao apagar logo", exc_info=True)
+    condominio.delete()
+    messages.success(request, f"Condomínio {nome} excluído.")
+    return redirect("plataforma")
+
+
+@_plataforma_required
 def plataforma_pagamento_comprovante(request, pk):
     pagamento = get_object_or_404(PagamentoPlano, pk=pk)
     if not pagamento.comprovante:

@@ -92,11 +92,14 @@ def enviar_lembretes(dias: int = 1, agora=None) -> int:
 
 
 def processar_prazos(dias_lembrete: int = 1) -> dict:
+    from apps.core.vencimentos import enviar_avisos_vencimento
+
     agora = timezone.now()
     return {
         "expiradas": expirar_sem_comprovante(agora),
         "prazos_vencidos": alertar_prazos(agora),
         "lembretes": enviar_lembretes(dias_lembrete, agora),
+        "avisos_vencimento": enviar_avisos_vencimento(),
     }
 
 

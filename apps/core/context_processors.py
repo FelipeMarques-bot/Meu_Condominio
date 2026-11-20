@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from django.conf import settings
 
 from .permissoes import (
@@ -21,6 +23,24 @@ def _papel_no_condominio(usuario, condominio) -> str:
     return "Visitante"
 
 
+def _link_suporte_whatsapp() -> str:
+    link = (settings.PLANO_WHATSAPP or "").strip()
+    if not link:
+        return ""
+    mensagem = (settings.PLANO_WHATSAPP_MENSAGEM or "").strip()
+    if not mensagem or "text=" in link:
+        return link
+    if link.startswith("http"):
+        separador = "&" if "?" in link else "?"
+        return f"{link}{separador}text={quote(mensagem)}"
+    digitos = "".join(caractere for caractere in link if caractere.isdigit())
+    if len(digitos) in (10, 11):
+        digitos = f"55{digitos}"
+    if not digitos:
+        return ""
+    return f"https://wa.me/{digitos}?text={quote(mensagem)}"
+
+
 def marca(request):
     condominio = getattr(request, "condominio", None)
     usuario = request.user
@@ -28,7 +48,7 @@ def marca(request):
         "site_nome": settings.SITE_NOME,
         "contato_email": settings.CONTATO_EMAIL,
         "plano_pix_chave": settings.PLANO_PIX_CHAVE,
-        "plano_whatsapp": settings.PLANO_WHATSAPP,
+        "plano_whatsapp": _link_suporte_whatsapp(),
         "captcha_site_key": settings.TURNSTILE_SITE_KEY,
         "condominio_atual": condominio,
         "papel_no_condominio": _papel_no_condominio(usuario, condominio),

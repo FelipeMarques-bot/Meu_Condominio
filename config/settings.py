@@ -47,6 +47,15 @@ if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
     CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
 
+SITE_URL = env(
+    "SITE_URL",
+    (
+        f"https://{RENDER_EXTERNAL_HOSTNAME}"
+        if RENDER_EXTERNAL_HOSTNAME
+        else "http://localhost:8000"
+    ),
+).rstrip("/")
+
 CONFIAR_NO_PROXY = env_bool("CONFIAR_NO_PROXY", not DEBUG)
 
 ADMIN_URL = env("ADMIN_URL", "admin/")
@@ -233,6 +242,19 @@ ASSINATURA_DIAS = int(env("ASSINATURA_DIAS", "30"))
 CARENCIA_DIAS = int(env("CARENCIA_DIAS", "5"))
 PLANO_PIX_CHAVE = env("PLANO_PIX_CHAVE")
 PLANO_WHATSAPP = env("PLANO_WHATSAPP")
+PLANO_WHATSAPP_MENSAGEM = env(
+    "PLANO_WHATSAPP_MENSAGEM",
+    (
+        "Olá! Vim pelo Meu Condomínio e preciso de ajuda.\n\n"
+        "Assunto:\n"
+        "1) Teste grátis\n"
+        "2) Pagamento e Pix\n"
+        "3) Configuração do condomínio\n"
+        "4) Outro\n\n"
+        "Meu nome:\n"
+        "Condomínio:"
+    ),
+)
 EMAIL_API_PROVIDER = env("EMAIL_API_PROVIDER").strip().lower()
 EMAIL_API_KEY = env("EMAIL_API_KEY")
 EMAIL_API_HABILITADA = bool(EMAIL_API_KEY) and EMAIL_API_PROVIDER in {
@@ -261,7 +283,10 @@ EMAIL_PORT = int(env("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Meu Condomínio <nao-responda@meucondominio.com.br>")
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL",
+    "Meu Condomínio <labintelligenceappoiments@gmail.com>",
+)
 
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "landing"

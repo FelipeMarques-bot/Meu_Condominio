@@ -77,6 +77,11 @@ class Condominio(models.Model):
         blank=True,
         help_text="Dia mensal escolhido para vencimento (1 a 28).",
     )
+    ultimo_aviso_vencimento = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Último dia em que o aviso de vencimento foi enviado.",
+    )
     isento_assinatura = models.BooleanField(
         default=False,
         help_text="Libera o acesso sem cobrança (condomínios internos ou de teste).",

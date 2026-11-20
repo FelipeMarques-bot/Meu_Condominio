@@ -135,6 +135,11 @@
               {% csrf_token %}
               <button type="submit" class="btn btn-primary px-3 py-2 text-xs">Liberar {{ dias_assinatura }} dias</button>
             </form>
+            <form method="post" action="{% url 'plataforma_condominio_excluir' pk=item.pk %}"
+                  onsubmit="return confirm('Excluir {{ item.nome|escapejs }} e TODOS os dados dele? Esta ação não pode ser desfeita.');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost px-3 py-2 text-xs text-danger">Excluir</button>
+            </form>
           </div>
         </article>
       {% empty %}

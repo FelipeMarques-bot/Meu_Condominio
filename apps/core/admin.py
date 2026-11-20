@@ -30,6 +30,7 @@ class CondominioAdmin(admin.ModelAdmin):
         "plano",
         "vencimento_em",
         "dia_vencimento",
+        "ultimo_aviso_vencimento",
         "isento_assinatura",
         "ativo",
         "criado_em",
