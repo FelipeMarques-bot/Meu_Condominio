@@ -277,6 +277,62 @@ def enviar_telegram(condominio, texto: str) -> bool:
         return False
 
 
+def _emails_plataforma() -> list[str]:
+    contatos = [settings.CONTATO_EMAIL]
+    contatos += list(
+        get_user_model()
+        .objects.filter(is_superuser=True)
+        .exclude(email="")
+        .values_list("email", flat=True)
+    )
+    return [email for email in dict.fromkeys(contatos) if email]
+
+
+def notificar_pagamento_enviado(pagamento, url_plataforma: str = "") -> None:
+    condominio = pagamento.condominio
+    dia = pagamento.dia_vencimento or condominio.dia_vencimento or "a definir"
+    valor = f"R$ {pagamento.valor:.2f}".replace(".", ",")
+    corpo = (
+        f"{condominio.nome} enviou um comprovante de pagamento.\n\n"
+        f"Plano: {pagamento.plano.nome if pagamento.plano else 'a definir'}\n"
+        f"Valor: {valor}\n"
+        f"Dia de vencimento escolhido: {dia}\n\n"
+    )
+    if url_plataforma:
+        corpo += f"Confira e libere em: {url_plataforma}\n"
+    _enviar_email(
+        f"Novo comprovante - {condominio.nome}",
+        corpo,
+        _emails_plataforma(),
+    )
+
+
+def notificar_pagamento_analisado(
+    pagamento, aprovado: bool, vencimento=None
+) -> None:
+    condominio = pagamento.condominio
+    if not emails_administradores(condominio):
+        return
+    if aprovado:
+        assunto = f"Pagamento aprovado - {condominio.nome}"
+        corpo = (
+            "Seu pagamento foi conferido e o plano está liberado.\n\n"
+            f"Condomínio: {condominio.nome}\n"
+        )
+        if vencimento:
+            corpo += f"Próximo vencimento: {vencimento:%d/%m/%Y}\n"
+    else:
+        assunto = f"Comprovante recusado - {condominio.nome}"
+        corpo = (
+            "O comprovante enviado não foi aceito.\n\n"
+            f"Condomínio: {condominio.nome}\n"
+        )
+        if pagamento.observacao:
+            corpo += f"Motivo: {pagamento.observacao}\n"
+        corpo += "\nEnvie um novo comprovante pela tela do plano.\n"
+    _enviar_email(assunto, corpo, emails_administradores(condominio))
+
+
 def link_whatsapp(telefone: str, texto: str) -> str:
     from urllib.parse import quote
 

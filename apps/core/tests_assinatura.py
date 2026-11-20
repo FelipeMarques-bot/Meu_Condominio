@@ -1,7 +1,8 @@
 from datetime import timedelta
 
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -116,6 +117,9 @@ class AcessoPorAssinaturaTests(TestCase):
         self.assertContains(resposta, "suspensos", status_code=403)
 
 
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend"
+)
 class PagamentoPlanoTests(TestCase):
     def setUp(self):
         self.condominio, self.unidade, self.sindico = criar_base(
@@ -150,6 +154,12 @@ class PagamentoPlanoTests(TestCase):
         self.assertEqual(pagamento.plano, self.plano)
         self.assertEqual(pagamento.valor, self.plano.preco_mensal)
         self.assertEqual(pagamento.status, PagamentoPlano.Status.PENDENTE)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Novo comprovante", mail.outbox[0].subject)
+        self.assertIn(
+            "labintelligenceappoiments@gmail.com",
+            mail.outbox[0].to,
+        )
 
     def test_nao_aceita_dois_comprovantes_pendentes(self):
         PagamentoPlano.objects.create(
@@ -204,6 +214,9 @@ class PagamentoPlanoTests(TestCase):
             self.condominio.dias_de_assinatura,
             5,
         )
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Pagamento aprovado", mail.outbox[0].subject)
+        self.assertIn("sindico@example.com", mail.outbox[0].to)
 
         self.client.force_login(self.sindico)
         self.assertEqual(
@@ -234,6 +247,8 @@ class PagamentoPlanoTests(TestCase):
         self.condominio.refresh_from_db()
         self.assertEqual(pagamento.status, PagamentoPlano.Status.RECUSADO)
         self.assertIsNone(self.condominio.assinatura_valida_ate)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Comprovante recusado", mail.outbox[0].subject)
 
 
 class LiberacaoManualTests(TestCase):

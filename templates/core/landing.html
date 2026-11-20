@@ -478,7 +478,8 @@
     </h2>
     <p class="mt-3 text-sm leading-relaxed text-muted">
       Comece barato no Essencial e suba de plano só quando o condomínio crescer.
-      A cobrança é por condomínio, nunca por morador, e o teste de 14 dias não pede cartão.
+      A cobrança é por condomínio, nunca por morador. O teste de 14 dias não pede cartão
+      e, depois dele, você escolhe o dia e paga por Pix todo mês.
     </p>
   </div>
 
@@ -493,7 +494,7 @@
         <ul class="mt-4 space-y-1 text-xs text-muted">
           <li>{% if plano.limite_unidades %}Até {{ plano.limite_unidades }} unidades{% else %}Unidades ilimitadas{% endif %}</li>
           <li>{% if plano.limite_locais %}Até {{ plano.limite_locais }} espaços{% else %}Espaços ilimitados{% endif %}</li>
-          <li>Pix manual e Pix automático</li>
+          <li>Pagamento mensal por Pix, sem cartão</li>
         </ul>
         <a href="{% url 'criar_condominio' %}" class="btn btn-ghost mt-5 w-full px-4 py-2 text-xs">Testar 14 dias</a>
       </article>

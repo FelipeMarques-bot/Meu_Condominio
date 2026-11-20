@@ -46,6 +46,8 @@ from .models import Condominio, PagamentoPlano, Plano
 from .notifications import (
     emails_administradores,
     link_whatsapp,
+    notificar_pagamento_analisado,
+    notificar_pagamento_enviado,
     telegram_configurado,
 )
 from .permissoes import gestao_required, pode_aprovar, pode_gerir
@@ -367,12 +369,16 @@ def assinatura(request, slug):
         )
         if form.is_valid():
             plano = form.cleaned_data["plano"]
-            PagamentoPlano.objects.create(
+            pagamento = PagamentoPlano.objects.create(
                 condominio=condominio,
                 plano=plano,
                 valor=plano.preco_mensal,
                 dia_vencimento=form.cleaned_data["dia_vencimento"],
                 comprovante=form.cleaned_data["comprovante"],
+            )
+            notificar_pagamento_enviado(
+                pagamento,
+                request.build_absolute_uri(reverse("plataforma")),
             )
             messages.success(
                 request,
@@ -1079,6 +1085,7 @@ def plataforma_pagamento_confirmar(request, pk):
     pagamento.analisado_em = timezone.now()
     pagamento.analisado_por = request.user
     pagamento.observacao = (request.POST.get("observacao") or "").strip()[:200]
+    vencimento = None
     if acao == "confirmar":
         pagamento.status = PagamentoPlano.Status.CONFIRMADO
         condominio = pagamento.condominio
@@ -1120,6 +1127,11 @@ def plataforma_pagamento_confirmar(request, pk):
         )
     pagamento.save(
         update_fields=["status", "analisado_em", "analisado_por", "observacao"]
+    )
+    notificar_pagamento_analisado(
+        pagamento,
+        aprovado=acao == "confirmar",
+        vencimento=vencimento,
     )
     return redirect("plataforma")
 
