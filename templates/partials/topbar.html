@@ -1,16 +1,19 @@
 <header class="sticky top-0 z-20 border-b border-line/80 bg-paper/85 backdrop-blur">
   <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-5 py-3 sm:px-8">
-    <a href="{% url 'agenda' slug=condominio.slug %}" class="flex items-center gap-3" aria-label="{{ condominio.nome }}, agenda">
-      {% if condominio.logo %}
-        <img src="{{ condominio.logo.url }}" alt="" class="h-14 w-auto max-w-[9rem] object-contain">
-      {% else %}
-        <span class="grid h-14 w-14 place-items-center rounded-xl bg-lagoon font-display text-base text-paper">{{ condominio.iniciais }}</span>
-      {% endif %}
-      <span class="leading-tight">
-        <span class="block text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-muted">{{ condominio.nome }}</span>
-        <span class="block font-display text-base">{% if ativo == 'gestao' %}Gestão{% elif ativo == 'painel' %}Painel{% elif ativo == 'conta' %}Minha conta{% elif ativo == 'plano' %}Plano{% else %}Reservas{% endif %}</span>
-      </span>
-    </a>
+    <div class="flex min-w-0 items-center gap-2">
+      {% include "partials/voltar.html" %}
+      <a href="{% url 'agenda' slug=condominio.slug %}" class="flex min-w-0 items-center gap-3" aria-label="{{ condominio.nome }}, agenda">
+        {% if condominio.logo %}
+          <img src="{{ condominio.logo.url }}" alt="" class="h-14 w-auto max-w-[9rem] object-contain">
+        {% else %}
+          <span class="grid h-14 w-14 place-items-center rounded-xl bg-lagoon font-display text-base text-paper">{{ condominio.iniciais }}</span>
+        {% endif %}
+        <span class="leading-tight">
+          <span class="block text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-muted">{{ condominio.nome }}</span>
+          <span class="block font-display text-base">{% if ativo == 'gestao' %}Gestão{% elif ativo == 'painel' %}Painel{% elif ativo == 'conta' %}Minha conta{% elif ativo == 'plano' %}Plano{% else %}Reservas{% endif %}</span>
+        </span>
+      </a>
+    </div>
 
     <div class="flex items-center gap-2">
       {% if user.is_authenticated %}

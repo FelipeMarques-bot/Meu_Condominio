@@ -1,0 +1,11 @@
+<a
+  href="{% if voltar_url %}{{ voltar_url }}{% elif user.is_authenticated %}{% url 'meus_condominios' %}{% else %}{% url 'landing' %}{% endif %}"
+  data-voltar
+  class="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold transition active:scale-95 {% if voltar_escuro %}border-paper/20 bg-paper/10 text-paper/80 hover:bg-paper/15 hover:text-paper{% else %}border-line bg-white/70 text-muted hover:border-lagoon/40 hover:bg-white hover:text-ink{% endif %}"
+  aria-label="Voltar"
+>
+  <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true">
+    <path d="M12 5 7 10l5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <span class="hidden sm:inline">Voltar</span>
+</a>

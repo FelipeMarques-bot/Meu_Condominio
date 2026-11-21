@@ -74,6 +74,29 @@
 
   .card {
     @apply rounded-3xl border border-line bg-white/75 backdrop-blur;
+    box-shadow:
+      0 24px 60px -42px rgba(12, 27, 31, 0.5),
+      0 2px 8px -4px rgba(12, 27, 31, 0.14);
+    transition:
+      box-shadow 0.35s ease,
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .card:hover {
+    box-shadow:
+      0 30px 70px -42px rgba(12, 27, 31, 0.55),
+      0 4px 14px -6px rgba(12, 27, 31, 0.18);
+  }
+
+  .analise-card {
+    border-left: 4px solid var(--color-warn);
+    background:
+      linear-gradient(90deg, rgba(184, 121, 42, 0.09), rgba(255, 255, 255, 0.76) 34%);
+  }
+
+  .analise-card:hover {
+    transform: translateY(-2px);
+    border-left-color: var(--color-clay);
   }
 
   .chip {
@@ -227,6 +250,30 @@
     will-change: auto;
   }
 
+  .reveal-ativo .plano-card {
+    opacity: 0;
+    transform: translateY(54px) scale(0.965);
+    transition:
+      opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.35s ease;
+    will-change: opacity, transform;
+  }
+
+  .reveal-ativo .plano-card.revelado {
+    opacity: 1;
+    transform: none;
+    will-change: auto;
+  }
+
+  .reveal-ativo .plano-card.revelado:hover,
+  .plano-card:hover {
+    transform: translateY(-7px);
+    box-shadow:
+      0 34px 70px -38px rgba(12, 27, 31, 0.5),
+      0 8px 20px -12px rgba(12, 27, 31, 0.2);
+  }
+
   html.nav-aberto {
     overflow: hidden;
   }
@@ -280,6 +327,16 @@
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+@keyframes analise-pulso {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(184, 121, 42, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(184, 121, 42, 0);
   }
 }
 
@@ -357,6 +414,10 @@
   .btn-primary:active,
   button[type="submit"]:active {
     transform: scale(0.97);
+  }
+
+  .analise-ponto {
+    animation: analise-pulso 2.4s ease-out infinite;
   }
 
   dialog[open],

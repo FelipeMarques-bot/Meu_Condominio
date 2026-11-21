@@ -48,6 +48,13 @@ Alpine.data("calendarioDias", () => ({
   },
 }));
 
+document.addEventListener("click", (evento) => {
+  const voltar = evento.target.closest("[data-voltar]");
+  if (!voltar || window.history.length <= 1) return;
+  evento.preventDefault();
+  window.history.back();
+});
+
 const prefereMenosMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const revelaveis = document.querySelectorAll(".reveal");
 

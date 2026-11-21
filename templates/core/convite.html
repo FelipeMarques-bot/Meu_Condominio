@@ -3,6 +3,10 @@
 {% block title %}Convite · {{ condominio.nome }}{% endblock %}
 
 {% block body %}
+{% url 'landing' as inicio %}
+<div class="fixed left-4 top-4 z-30">
+  {% include "partials/voltar.html" with voltar_url=inicio %}
+</div>
 <main id="conteudo" class="grid min-h-dvh place-items-center px-5 py-10">
   <div class="w-full max-w-md">
     <div class="mx-auto flex w-fit items-center gap-3">
