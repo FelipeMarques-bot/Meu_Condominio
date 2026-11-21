@@ -242,18 +242,18 @@ ASSINATURA_DIAS = int(env("ASSINATURA_DIAS", "30"))
 CARENCIA_DIAS = int(env("CARENCIA_DIAS", "5"))
 PLANO_PIX_CHAVE = env("PLANO_PIX_CHAVE")
 PLANO_WHATSAPP = env("PLANO_WHATSAPP")
+PLANO_WHATSAPP_MENSAGEM_PADRAO = (
+    "Olá! Vim pelo Meu Condomínio e preciso de ajuda.\n\n"
+    "Assunto:\n"
+    "1) Teste grátis\n"
+    "2) Pagamento e Pix\n"
+    "3) Configuração do condomínio\n"
+    "4) Outro\n\n"
+    "Meu nome:\n"
+    "Condomínio:"
+)
 PLANO_WHATSAPP_MENSAGEM = env(
-    "PLANO_WHATSAPP_MENSAGEM",
-    (
-        "Olá! Vim pelo Meu Condomínio e preciso de ajuda.\n\n"
-        "Assunto:\n"
-        "1) Teste grátis\n"
-        "2) Pagamento e Pix\n"
-        "3) Configuração do condomínio\n"
-        "4) Outro\n\n"
-        "Meu nome:\n"
-        "Condomínio:"
-    ),
+    "PLANO_WHATSAPP_MENSAGEM", PLANO_WHATSAPP_MENSAGEM_PADRAO
 )
 EMAIL_API_PROVIDER = env("EMAIL_API_PROVIDER").strip().lower()
 EMAIL_API_KEY = env("EMAIL_API_KEY")

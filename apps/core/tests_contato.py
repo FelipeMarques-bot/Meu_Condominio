@@ -1,4 +1,5 @@
-from django.test import SimpleTestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
+from django.urls import reverse
 
 from .context_processors import _link_suporte_whatsapp
 
@@ -21,3 +22,35 @@ class LinkSuporteTests(SimpleTestCase):
             _link_suporte_whatsapp(),
             "https://wa.me/5511999999999?text=antiga",
         )
+
+    @override_settings(
+        PLANO_WHATSAPP="https://wa.me/5511999999999?text=",
+        PLANO_WHATSAPP_MENSAGEM="Mensagem padrão",
+    )
+    def test_completa_texto_vazio_no_link(self):
+        self.assertEqual(
+            _link_suporte_whatsapp(),
+            "https://wa.me/5511999999999?text=Mensagem%20padr%C3%A3o",
+        )
+
+    @override_settings(
+        PLANO_WHATSAPP="https://wa.me/5511999999999",
+        PLANO_WHATSAPP_MENSAGEM="",
+    )
+    def test_usa_mensagem_padrao_quando_variavel_fica_vazia(self):
+        link = _link_suporte_whatsapp()
+
+        self.assertIn("?text=Ol%C3%A1", link)
+        self.assertIn("Teste%20gr%C3%A1tis", link)
+
+
+@override_settings(
+    PLANO_WHATSAPP="https://wa.me/5511999999999",
+    PLANO_WHATSAPP_MENSAGEM="",
+)
+class BotaoContatoLandingTests(TestCase):
+    def test_botao_falar_com_a_gente_abre_whatsapp_com_texto(self):
+        resposta = self.client.get(reverse("landing"))
+
+        self.assertContains(resposta, "https://wa.me/5511999999999?text=Ol%C3%A1")
+        self.assertContains(resposta, "Falar com a gente")

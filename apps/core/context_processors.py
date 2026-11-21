@@ -28,7 +28,11 @@ def _link_suporte_whatsapp() -> str:
     if not link:
         return ""
     mensagem = (settings.PLANO_WHATSAPP_MENSAGEM or "").strip()
-    if not mensagem or "text=" in link:
+    if not mensagem:
+        mensagem = settings.PLANO_WHATSAPP_MENSAGEM_PADRAO
+    if "text=" in link:
+        if link.rstrip().endswith("text="):
+            return f"{link}{quote(mensagem)}"
         return link
     if link.startswith("http"):
         separador = "&" if "?" in link else "?"
