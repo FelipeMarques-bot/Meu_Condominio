@@ -23,13 +23,11 @@ def _papel_no_condominio(usuario, condominio) -> str:
     return "Visitante"
 
 
-def _link_suporte_whatsapp() -> str:
+def _montar_link_whatsapp(mensagem_configurada: str, mensagem_padrao: str) -> str:
     link = (settings.PLANO_WHATSAPP or "").strip()
     if not link:
         return ""
-    mensagem = (settings.PLANO_WHATSAPP_MENSAGEM or "").strip()
-    if not mensagem:
-        mensagem = settings.PLANO_WHATSAPP_MENSAGEM_PADRAO
+    mensagem = (mensagem_configurada or "").strip() or mensagem_padrao
     if "text=" in link:
         if link.rstrip().endswith("text="):
             return f"{link}{quote(mensagem)}"
@@ -45,6 +43,20 @@ def _link_suporte_whatsapp() -> str:
     return f"https://wa.me/{digitos}?text={quote(mensagem)}"
 
 
+def _link_suporte_whatsapp() -> str:
+    return _montar_link_whatsapp(
+        settings.PLANO_WHATSAPP_MENSAGEM,
+        settings.PLANO_WHATSAPP_MENSAGEM_PADRAO,
+    )
+
+
+def _link_suporte_landing() -> str:
+    return _montar_link_whatsapp(
+        settings.PLANO_WHATSAPP_MENSAGEM_LANDING,
+        settings.PLANO_WHATSAPP_MENSAGEM_LANDING_PADRAO,
+    )
+
+
 def marca(request):
     condominio = getattr(request, "condominio", None)
     usuario = request.user
@@ -53,6 +65,7 @@ def marca(request):
         "contato_email": settings.CONTATO_EMAIL,
         "plano_pix_chave": settings.PLANO_PIX_CHAVE,
         "plano_whatsapp": _link_suporte_whatsapp(),
+        "plano_whatsapp_landing": _link_suporte_landing(),
         "captcha_site_key": settings.TURNSTILE_SITE_KEY,
         "condominio_atual": condominio,
         "papel_no_condominio": _papel_no_condominio(usuario, condominio),

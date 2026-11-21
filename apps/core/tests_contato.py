@@ -1,7 +1,7 @@
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
-from .context_processors import _link_suporte_whatsapp
+from .context_processors import _link_suporte_landing, _link_suporte_whatsapp
 
 
 @override_settings(
@@ -46,11 +46,22 @@ class LinkSuporteTests(SimpleTestCase):
 
 @override_settings(
     PLANO_WHATSAPP="https://wa.me/5511999999999",
-    PLANO_WHATSAPP_MENSAGEM="",
+    PLANO_WHATSAPP_MENSAGEM="Mensagem com opções",
+    PLANO_WHATSAPP_MENSAGEM_LANDING="Quero conhecer o Meu Condomínio",
 )
 class BotaoContatoLandingTests(TestCase):
-    def test_botao_falar_com_a_gente_abre_whatsapp_com_texto(self):
+    def test_botao_falar_com_a_gente_usa_mensagem_simples(self):
         resposta = self.client.get(reverse("landing"))
 
-        self.assertContains(resposta, "https://wa.me/5511999999999?text=Ol%C3%A1")
+        self.assertContains(
+            resposta,
+            "https://wa.me/5511999999999?text=Quero%20conhecer%20o%20Meu%20Condom%C3%ADnio",
+        )
         self.assertContains(resposta, "Falar com a gente")
+
+    def test_mensagens_do_site_e_do_plano_sao_diferentes(self):
+        self.assertNotEqual(
+            _link_suporte_landing(),
+            _link_suporte_whatsapp(),
+        )
+        self.assertIn("op%C3%A7%C3%B5es", _link_suporte_whatsapp())

@@ -80,6 +80,10 @@ services:
         sync: false
       - key: PLANO_WHATSAPP
         sync: false
+      - key: PLANO_WHATSAPP_MENSAGEM
+        sync: false
+      - key: PLANO_WHATSAPP_MENSAGEM_LANDING
+        sync: false
       - key: TURNSTILE_SITE_KEY
         sync: false
       - key: TURNSTILE_SECRET_KEY
