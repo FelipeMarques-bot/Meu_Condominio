@@ -55,6 +55,21 @@ document.addEventListener("click", (evento) => {
   window.history.back();
 });
 
+const ehDispositivoMovel = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+const prepararCompartilhamentoWhatsApp = () => {
+  if (ehDispositivoMovel) return;
+  document.querySelectorAll("[data-wa-desktop]").forEach((link) => {
+    link.href = link.dataset.waDesktop;
+  });
+};
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", prepararCompartilhamentoWhatsApp);
+} else {
+  prepararCompartilhamentoWhatsApp();
+}
+
 const prefereMenosMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const revelaveis = document.querySelectorAll(".reveal");
 

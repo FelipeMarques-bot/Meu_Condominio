@@ -63,6 +63,8 @@ class ConviteAdminTests(TestCase):
             reverse("convites", kwargs={"slug": self.condominio.slug})
         )
         self.assertContains(pagina, "Enviar por WhatsApp")
+        self.assertContains(pagina, "data-wa-desktop")
+        self.assertContains(pagina, "app_absent=1")
 
     def test_morador_nao_cria_convite(self):
         morador = Usuario.objects.create_user(
