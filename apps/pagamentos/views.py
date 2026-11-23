@@ -79,7 +79,7 @@ def webhook_abacatepay(request, slug, token):
         .first()
     )
     if reserva is None:
-        evento.detalhe = "CobranÃ§a nÃ£o encontrada para este condomÃ­nio."
+        evento.detalhe = "Cobrança não encontrada para este condomínio."
         evento.save(update_fields=["detalhe"])
         return HttpResponse(status=200)
 
@@ -93,7 +93,7 @@ def webhook_abacatepay(request, slug, token):
         return HttpResponse(status=200)
 
     if str(cobranca.get("status") or "") not in STATUS_PAGOS:
-        evento.detalhe = f"Status {cobranca.get('status')} nÃ£o confirma a reserva."
+        evento.detalhe = f"Status {cobranca.get('status')} não confirma a reserva."
         evento.save(update_fields=["detalhe"])
         return HttpResponse(status=200)
 
@@ -101,7 +101,7 @@ def webhook_abacatepay(request, slug, token):
         reserva = Reserva.all_objects.select_for_update().get(pk=reserva.pk)
         if reserva.status == Reserva.Status.CONFIRMADA:
             evento.processado = True
-            evento.detalhe = "Reserva jÃ¡ estava confirmada."
+            evento.detalhe = "Reserva já estava confirmada."
             evento.save(update_fields=["processado", "detalhe"])
             return HttpResponse(status=200)
 

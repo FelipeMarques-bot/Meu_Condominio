@@ -1,6 +1,8 @@
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from django.conf import settings
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
@@ -184,3 +186,35 @@ class AdminBrandingTests(TestCase):
         self.assertContains(resposta, "Meu Condomínio")
         self.assertContains(resposta, "Área da equipe")
         self.assertNotContains(resposta, "Django administration")
+
+
+class OrtografiaDosTextosTests(TestCase):
+    """Evita que acentos voltem corrompidos para os textos do site."""
+
+    def test_arquivos_nao_tem_caracteres_corrompidos(self):
+        raiz = Path(settings.BASE_DIR)
+        ignorar = {
+            ".git",
+            ".venv",
+            "node_modules",
+            "staticfiles",
+            "dist",
+            "__pycache__",
+        }
+        extensoes = {".py", ".html", ".css", ".js", ".md", ".yaml", ".yml"}
+        problemas = []
+
+        for caminho in raiz.rglob("*"):
+            if not caminho.is_file() or caminho.suffix not in extensoes:
+                continue
+            if any(parte in ignorar for parte in caminho.parts):
+                continue
+            try:
+                conteudo = caminho.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                problemas.append(caminho.relative_to(raiz).as_posix())
+                continue
+            if "\ufffd" in conteudo:
+                problemas.append(caminho.relative_to(raiz).as_posix())
+
+        self.assertEqual(problemas, [])

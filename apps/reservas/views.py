@@ -533,7 +533,7 @@ def confirmar_reserva(request, slug, pk):
     if request.POST.get("confirmo_analise") != "on":
         messages.error(
             request,
-            "Confirme que vocǦ abriu e conferiu o comprovante antes de aprovar.",
+            "Confirme que você abriu e conferiu o comprovante antes de aprovar.",
         )
         return redirect("analise_reserva", slug=slug, pk=pk)
 
