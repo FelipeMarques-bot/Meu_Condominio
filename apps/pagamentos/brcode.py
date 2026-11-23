@@ -33,7 +33,7 @@ def crc16(payload: str) -> str:
 
 
 def gerar_payload(
-    chave: str, nome: str, cidade: str, valor: Decimal | str
+    chave: str, nome: str, cidade: str, valor: Decimal | str | None = None
 ) -> str:
     chave = (chave or "").strip()
     if not chave:
@@ -41,7 +41,9 @@ def gerar_payload(
 
     nome = _texto(nome, 25) or "CONDOMINIO"
     cidade = _texto(cidade, 15) or "BRASIL"
-    valor_texto = f"{Decimal(valor):.2f}"
+    campo_valor = ""
+    if valor not in (None, ""):
+        campo_valor = _campo("54", f"{Decimal(valor):.2f}")
 
     conta = _campo("00", "br.gov.bcb.pix") + _campo("01", chave)
     payload = (
@@ -49,7 +51,7 @@ def gerar_payload(
         + _campo("26", conta)
         + "52040000"
         + "5303986"
-        + _campo("54", valor_texto)
+        + campo_valor
         + "5802BR"
         + _campo("59", nome)
         + _campo("60", cidade)

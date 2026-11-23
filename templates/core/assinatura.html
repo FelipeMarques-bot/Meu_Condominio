@@ -152,10 +152,25 @@
             {% for erro in form.dia_vencimento.errors %}<p class="mt-1 text-xs text-danger">{{ erro }}</p>{% endfor %}
           </div>
           {% if plano_pix_chave %}
-            <div class="rounded-2xl border border-line bg-white/70 p-4">
-              <p class="text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-muted">Chave Pix da plataforma</p>
-              <p class="mt-1 select-all break-all font-mono text-sm">{{ plano_pix_chave }}</p>
-              <p class="mt-2 text-xs text-muted">Pague o valor do plano escolhido e envie o comprovante abaixo.</p>
+            <div class="rounded-2xl border border-line bg-white/70 p-4" x-data="{ pixCopiado: false }">
+              <div class="grid gap-4 sm:grid-cols-[9rem_1fr] sm:items-start">
+                {% if plano_pix_qr %}
+                  <img src="{{ plano_pix_qr }}" alt="QR Code Pix da plataforma" class="mx-auto h-36 w-36 rounded-2xl border border-line bg-white p-2 shadow-sm">
+                {% endif %}
+                <div class="min-w-0">
+                  <p class="text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-muted">Chave Pix da plataforma</p>
+                  <p class="mt-1 select-all break-all font-mono text-sm">{{ plano_pix_chave }}</p>
+                  {% if plano_pix_payload %}
+                    <label for="pix-plataforma" class="mt-3 block text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-muted">Pix copia e cola</label>
+                    <textarea id="pix-plataforma" x-ref="pixPlataforma" readonly rows="3" class="field mt-1 font-mono text-[0.68rem] leading-relaxed">{{ plano_pix_payload }}</textarea>
+                    <button type="button" class="btn btn-ghost mt-2 w-full px-3 py-2 text-xs"
+                            @click="navigator.clipboard.writeText($refs.pixPlataforma.value); pixCopiado = true; setTimeout(() => pixCopiado = false, 2000)">
+                      <span x-text="pixCopiado ? 'Código copiado' : 'Copiar código Pix'">Copiar código Pix</span>
+                    </button>
+                  {% endif %}
+                  <p class="mt-2 text-xs leading-relaxed text-muted">Escaneie ou copie e pague o valor do plano escolhido. Depois envie o comprovante abaixo.</p>
+                </div>
+              </div>
             </div>
           {% else %}
             <p class="text-xs leading-relaxed text-muted">

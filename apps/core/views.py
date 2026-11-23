@@ -20,7 +20,9 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.core.storage import armazenamento_privado
+from apps.pagamentos.brcode import gerar_payload, gerar_qr_data_uri
 from apps.reservas.models import Local
+from apps.reservas.resultados import resultados_nao_vistos
 from apps.usuarios.forms import CadastroConviteForm, ConviteForm, TelefoneForm
 from apps.usuarios.models import Convite, Unidade, Usuario, VinculoUnidade
 
@@ -348,6 +350,15 @@ def assinatura(request, slug):
         raise Http404("Você não tem acesso a este condomínio.")
 
     gerir = pode_gerir(request.user, condominio)
+    if not gerir:
+        if not condominio.acesso_liberado:
+            return redirect("acesso_suspenso", slug=condominio.slug)
+        messages.info(
+            request,
+            "As informações do plano são gerenciadas pelo síndico do condomínio.",
+        )
+        return redirect("agenda", slug=condominio.slug)
+
     pendente = condominio.pagamentos_plano.filter(
         status=PagamentoPlano.Status.PENDENTE
     ).first()
@@ -389,6 +400,19 @@ def assinatura(request, slug):
     if form is None:
         form = PagamentoPlanoForm(condominio=condominio)
 
+    plano_pix_payload = ""
+    plano_pix_qr = ""
+    if settings.PLANO_PIX_CHAVE:
+        try:
+            plano_pix_payload = gerar_payload(
+                settings.PLANO_PIX_CHAVE,
+                settings.PLANO_PIX_BENEFICIARIO,
+                settings.PLANO_PIX_CIDADE,
+            )
+            plano_pix_qr = gerar_qr_data_uri(plano_pix_payload)
+        except ValueError:
+            logger.warning("Chave Pix da plataforma inválida", exc_info=True)
+
     return render(
         request,
         "core/assinatura.html",
@@ -402,7 +426,32 @@ def assinatura(request, slug):
             "pagamentos": condominio.pagamentos_plano.select_related("plano")[:6],
             "pode_gerir": gerir,
             "dias_assinatura": settings.ASSINATURA_DIAS,
+            "plano_pix_payload": plano_pix_payload,
+            "plano_pix_qr": plano_pix_qr,
         },
+    )
+
+
+@login_required
+def acesso_suspenso(request, slug):
+    """Mensagem para o morador quando o condomínio está sem acesso."""
+    condominio = getattr(request, "condominio", None)
+    if condominio is None:
+        raise Http404("Condomínio não encontrado.")
+    if not request.user.vinculos.filter(
+        ativo=True, unidade__condominio=condominio
+    ).exists():
+        raise Http404("Você não tem acesso a este condomínio.")
+    if pode_gerir(request.user, condominio):
+        return redirect("assinatura", slug=condominio.slug)
+    if condominio.acesso_liberado:
+        return redirect("agenda", slug=condominio.slug)
+
+    return render(
+        request,
+        "core/acesso_residente.html",
+        {"condominio": condominio},
+        status=403,
     )
 
 
@@ -497,6 +546,7 @@ def agenda(request, slug):
             "condominio": condominio,
             "configuracao": configuracao,
             "locais": locais,
+            "resultados_novos": resultados_nao_vistos(request.user, condominio),
         },
     )
 
@@ -772,8 +822,21 @@ def convite_excluir(request, slug, pk):
 
     convite = get_object_or_404(Convite, pk=pk, condominio=condominio)
     rotulo = convite.unidade.rotulo
+    removido = False
+    if convite.usado_por is not None:
+        removido, _ = VinculoUnidade.objects.filter(
+            usuario=convite.usado_por,
+            unidade=convite.unidade,
+            papel=convite.papel,
+        ).delete()
     convite.delete()
-    messages.success(request, f"Convite da {rotulo} excluído.")
+    if removido:
+        messages.success(
+            request,
+            f"Convite da {rotulo} excluído. O acesso criado por ele também foi removido.",
+        )
+    else:
+        messages.success(request, f"Convite da {rotulo} excluído.")
     return redirect("convites", slug=condominio.slug)
 
 

@@ -48,13 +48,6 @@ Alpine.data("calendarioDias", () => ({
   },
 }));
 
-document.addEventListener("click", (evento) => {
-  const voltar = evento.target.closest("[data-voltar]");
-  if (!voltar || window.history.length <= 1) return;
-  evento.preventDefault();
-  window.history.back();
-});
-
 const ehDispositivoMovel = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 const prepararCompartilhamentoWhatsApp = () => {
@@ -94,6 +87,35 @@ if (!prefereMenosMovimento && revelaveis.length) {
     const posicao = Math.max(irmaos.indexOf(elemento), 0);
     elemento.style.transitionDelay = `${Math.min(posicao, 7) * 70}ms`;
     observador.observe(elemento);
+  });
+}
+
+const cartoes = Array.from(document.querySelectorAll(".card")).filter(
+  (cartao) => !cartao.classList.contains("plano-card") && !cartao.closest(".sem-anim"),
+);
+
+if (!prefereMenosMovimento && cartoes.length) {
+  document.documentElement.classList.add("cards-reveal-ativo");
+
+  const observadorCartoes = new IntersectionObserver(
+    (entradas) => {
+      entradas.forEach((entrada) => {
+        if (!entrada.isIntersecting) return;
+        entrada.target.classList.add("revelado");
+        observadorCartoes.unobserve(entrada.target);
+      });
+    },
+    { threshold: 0.08, rootMargin: "0px 0px -4% 0px" },
+  );
+
+  cartoes.forEach((cartao) => {
+    const irmaos = Array.from(
+      cartao.parentElement?.querySelectorAll(":scope > .card") ?? [],
+    );
+    const posicao = Math.max(irmaos.indexOf(cartao), 0);
+    cartao.classList.add("card-reveal");
+    cartao.style.transitionDelay = `${Math.min(posicao, 5) * 45}ms`;
+    observadorCartoes.observe(cartao);
   });
 }
 

@@ -4,6 +4,7 @@ from django.conf import settings
 from django.shortcuts import redirect
 
 from .models import Condominio
+from .permissoes import pode_gerir
 from .tenancy import reset_current_condominio, set_current_condominio
 
 _PREFIXO_CONDOMINIO = re.compile(r"^/c/(?P<slug>[^/]+)/")
@@ -36,7 +37,12 @@ class TenantMiddleware:
 class AssinaturaMiddleware:
     """Suspende o acesso ao condomínio quando o teste acabou e não há plano pago."""
 
-    ROTAS_LIVRES = {"assinatura", "minha_conta", "trocar_senha"}
+    ROTAS_LIVRES = {
+        "acesso_suspenso",
+        "assinatura",
+        "minha_conta",
+        "trocar_senha",
+    }
     ROTAS_EMAIL_LIVRES = {
         "confirmar_email",
         "confirmar_email_pendente",
@@ -75,5 +81,8 @@ class AssinaturaMiddleware:
             ativo=True, unidade__condominio=condominio
         ).exists():
             return None
+
+        if not pode_gerir(request.user, condominio):
+            return redirect("acesso_suspenso", slug=condominio.slug)
 
         return redirect("assinatura", slug=condominio.slug)

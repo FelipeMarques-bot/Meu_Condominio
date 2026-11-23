@@ -328,6 +328,31 @@ class ConviteExcluirTests(TestCase):
         )
         self.assertFalse(Convite.objects.filter(pk=convite.pk).exists())
 
+    def test_excluir_convite_usado_remove_vinculo_do_morador(self):
+        condominio, unidade = criar_base()
+        sindico = criar_sindico(unidade)
+        morador = Usuario.objects.create_user(
+            username="morador", email="morador@example.com", password=SENHA
+        )
+        vinculo = VinculoUnidade.objects.create(usuario=morador, unidade=unidade)
+        convite = Convite.objects.create(
+            condominio=condominio,
+            unidade=unidade,
+            usado_em=timezone.now(),
+            usado_por=morador,
+        )
+        self.client.force_login(sindico)
+
+        self.client.post(
+            reverse(
+                "convite_excluir",
+                kwargs={"slug": condominio.slug, "pk": convite.pk},
+            )
+        )
+
+        self.assertFalse(VinculoUnidade.objects.filter(pk=vinculo.pk).exists())
+        self.assertTrue(Usuario.objects.filter(pk=morador.pk).exists())
+
 
 class RedefinirSenhaTests(TestCase):
     def test_sindico_gera_senha_temporaria(self):

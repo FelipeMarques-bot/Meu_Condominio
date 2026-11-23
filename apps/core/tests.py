@@ -1,10 +1,12 @@
+from types import SimpleNamespace
 from unittest.mock import patch
 
-from django.test import TestCase, override_settings
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
 from apps.reservas.models import Local
 
+from .context_processors import _voltar_url
 from .models import Condominio, ConfiguracaoCondominio
 from .notifications import enviar_telegram, telegram_configurado
 from .tenancy import reset_current_condominio, set_current_condominio
@@ -12,6 +14,52 @@ from .tenancy import reset_current_condominio, set_current_condominio
 
 def criar_condominio(nome: str, slug: str) -> Condominio:
     return Condominio.objects.create(nome=nome, slug=slug)
+
+
+class VoltarUrlTests(TestCase):
+    def setUp(self):
+        self.condominio = criar_condominio("Bela Vista", "bela-vista")
+        self.usuario = SimpleNamespace(is_authenticated=True)
+
+    def _url(self, rota, usuario=None):
+        request = RequestFactory().get("/")
+        request.user = usuario or self.usuario
+        request.condominio = self.condominio
+        request.resolver_match = SimpleNamespace(url_name=rota)
+        return _voltar_url(request)
+
+    def test_agenda_volta_para_meus_condominios(self):
+        self.assertEqual(self._url("agenda"), reverse("meus_condominios"))
+
+    def test_gestao_volta_para_agenda(self):
+        self.assertEqual(
+            self._url("gestao"),
+            reverse("agenda", args=[self.condominio.slug]),
+        )
+
+    def test_painel_volta_para_gestao(self):
+        self.assertEqual(
+            self._url("painel"),
+            reverse("gestao", args=[self.condominio.slug]),
+        )
+
+    def test_relatorios_volta_para_gestao(self):
+        self.assertEqual(
+            self._url("relatorios"),
+            reverse("gestao", args=[self.condominio.slug]),
+        )
+
+    def test_trocar_senha_volta_para_minha_conta(self):
+        self.assertEqual(
+            self._url("trocar_senha"),
+            reverse("minha_conta", args=[self.condominio.slug]),
+        )
+
+    def test_editar_local_volta_para_locais(self):
+        self.assertEqual(
+            self._url("local_editar"),
+            reverse("locais", args=[self.condominio.slug]),
+        )
 
 
 class ConfiguracaoPadraoTests(TestCase):

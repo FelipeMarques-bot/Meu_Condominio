@@ -1,3 +1,4 @@
+import math
 import secrets
 from datetime import timedelta
 
@@ -115,7 +116,8 @@ class Condominio(models.Model):
     def dias_de_trial(self) -> int:
         if not self.em_trial:
             return 0
-        return max(0, (self.trial_ate - timezone.now()).days)
+        segundos = (self.trial_ate - timezone.now()).total_seconds()
+        return max(0, math.ceil(segundos / 86400))
 
     @property
     def assinatura_ativa(self) -> bool:

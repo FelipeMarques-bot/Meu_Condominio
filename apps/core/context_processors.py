@@ -1,6 +1,7 @@
 from urllib.parse import quote
 
 from django.conf import settings
+from django.urls import reverse
 
 from .permissoes import (
     eh_admin_condominio,
@@ -57,10 +58,66 @@ def _link_suporte_landing() -> str:
     )
 
 
+def _voltar_url(request) -> str:
+    rota = getattr(getattr(request, "resolver_match", None), "url_name", "")
+    if not rota:
+        return ""
+    if not request.user.is_authenticated:
+        return reverse("landing")
+    if rota in {
+        "landing",
+        "login",
+        "criar_condominio",
+        "confirmar_email",
+        "confirmar_email_pendente",
+        "reenviar_confirmacao_email",
+        "plataforma_entrar",
+        "meus_condominios",
+        "plataforma",
+    }:
+        return reverse("landing")
+    if rota == "plataforma_armazenamento":
+        return reverse("plataforma")
+    if rota == "senha_temporaria":
+        return reverse("meus_condominios")
+
+    condominio = getattr(request, "condominio", None)
+    if condominio is None:
+        return reverse("meus_condominios")
+
+    slug = condominio.slug
+    if rota == "agenda":
+        return reverse("meus_condominios")
+    if rota == "gestao":
+        return reverse("agenda", kwargs={"slug": slug})
+    if rota == "painel":
+        return reverse("gestao", kwargs={"slug": slug})
+    if rota == "analise":
+        return reverse("painel", kwargs={"slug": slug})
+    if rota == "trocar_senha":
+        return reverse("minha_conta", kwargs={"slug": slug})
+    if rota == "local_editar":
+        return reverse("locais", kwargs={"slug": slug})
+    if rota == "unidade_editar":
+        return reverse("unidades", kwargs={"slug": slug})
+    if rota in {
+        "locais",
+        "unidades",
+        "convites",
+        "configuracoes",
+        "identidade",
+        "relatorios",
+        "checkin",
+    }:
+        return reverse("gestao", kwargs={"slug": slug})
+    return reverse("agenda", kwargs={"slug": slug})
+
+
 def marca(request):
     condominio = getattr(request, "condominio", None)
     usuario = request.user
     return {
+        "voltar_url_padrao": _voltar_url(request),
         "site_nome": settings.SITE_NOME,
         "contato_email": settings.CONTATO_EMAIL,
         "plano_pix_chave": settings.PLANO_PIX_CHAVE,

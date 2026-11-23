@@ -17,6 +17,11 @@ urlpatterns = [
     path("c/<slug:slug>/checkin/", views.checkin, name="checkin"),
     path("c/<slug:slug>/relatorios/", views.relatorios, name="relatorios"),
     path("c/<slug:slug>/reservas/", views.minhas_reservas, name="minhas_reservas"),
+    path(
+        "c/<slug:slug>/reservas/resultados/visto/",
+        views.marcar_resultados_vistos,
+        name="marcar_resultados_vistos",
+    ),
     path("c/<slug:slug>/reservas/<int:pk>/", views.reserva_detalhe, name="reserva_detalhe"),
     path("c/<slug:slug>/reservas/<int:pk>/qr/", views.reserva_qr, name="reserva_qr"),
     path("c/<slug:slug>/reservas/<int:pk>/pagamento/", views.pagamento, name="pagamento"),

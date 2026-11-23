@@ -73,10 +73,11 @@
   }
 
   .card {
-    @apply rounded-3xl border border-line bg-white/75 backdrop-blur;
+    @apply rounded-3xl border border-line bg-white/80 backdrop-blur;
     box-shadow:
-      0 24px 60px -42px rgba(12, 27, 31, 0.5),
-      0 2px 8px -4px rgba(12, 27, 31, 0.14);
+      0 18px 40px -30px rgba(12, 27, 31, 0.38),
+      0 4px 12px -6px rgba(12, 27, 31, 0.16),
+      0 1px 2px rgba(12, 27, 31, 0.04);
     transition:
       box-shadow 0.35s ease,
       transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
@@ -84,8 +85,8 @@
 
   .card:hover {
     box-shadow:
-      0 30px 70px -42px rgba(12, 27, 31, 0.55),
-      0 4px 14px -6px rgba(12, 27, 31, 0.18);
+      0 26px 54px -30px rgba(12, 27, 31, 0.42),
+      0 8px 18px -10px rgba(12, 27, 31, 0.18);
   }
 
   .analise-card {
@@ -129,19 +130,30 @@
   }
 
   .calendario-dia {
-    @apply relative min-h-[4.9rem] w-full border-b border-r border-line/60 p-1.5 text-left sm:min-h-[6.4rem] sm:p-2;
+    @apply relative min-h-[5.6rem] w-full border-b border-r border-line/70 p-2 text-left sm:min-h-[7.2rem] sm:p-3;
+    background-color: color-mix(in srgb, #fffdf7 84%, transparent);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    transition:
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
   }
 
   .calendario-dia:enabled {
-    @apply cursor-pointer transition;
+    @apply cursor-pointer;
   }
 
   .calendario-dia:enabled:hover {
-    background-color: color-mix(in srgb, var(--color-lagoon) 5%, transparent);
+    background-color: color-mix(in srgb, var(--color-lagoon) 8%, #fffdf7);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--color-lagoon) 24%, transparent),
+      0 8px 18px -16px rgba(12, 27, 31, 0.5);
+    transform: translateY(-1px);
   }
 
   .calendario-dia:enabled:active {
-    background-color: color-mix(in srgb, var(--color-lagoon) 11%, transparent);
+    background-color: color-mix(in srgb, var(--color-lagoon) 13%, #fffdf7);
+    transform: scale(0.985);
   }
 
   .calendario-dia:disabled {
@@ -152,12 +164,24 @@
     @apply border-r-0;
   }
 
+  .calendario-dia:nth-child(7n),
+  .calendario-dia:nth-child(7n + 1) {
+    background-color: color-mix(in srgb, var(--color-sand) 22%, #fffdf7);
+  }
+
   .calendario-fora {
-    @apply bg-paper/50;
+    background-color: color-mix(in srgb, var(--color-paper) 76%, #ffffff);
+  }
+
+  .calendario-fora .calendario-numero {
+    opacity: 0.42;
   }
 
   .calendario-hoje {
-    @apply bg-clay/5;
+    background-color: color-mix(in srgb, var(--color-clay) 12%, #fffdf7);
+    box-shadow:
+      inset 0 0 0 2px color-mix(in srgb, var(--color-clay) 38%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
   .calendario-numero {
@@ -185,7 +209,7 @@
   }
 
   .calendario-ponto-lg {
-    @apply h-2.5 w-2.5;
+    @apply h-3 w-3 ring-2 ring-white/70;
   }
 }
 
@@ -245,6 +269,23 @@
   }
 
   .reveal-ativo .reveal.revelado {
+    opacity: 1;
+    transform: none;
+    will-change: auto;
+  }
+
+  .cards-reveal-ativo .card-reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: none;
+    transition:
+      opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.35s ease;
+    will-change: opacity, transform;
+  }
+
+  .cards-reveal-ativo .card-reveal.revelado {
     opacity: 1;
     transform: none;
     will-change: auto;

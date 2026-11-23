@@ -32,14 +32,14 @@
   <div class="calendario-papel mt-4 overflow-hidden rounded-3xl border border-line shadow-[0_30px_70px_-45px_rgba(12,27,31,0.65)]">
     <div class="calendario-furos" aria-hidden="true"></div>
 
-    <div class="grid grid-cols-7 border-b border-line/70 bg-white/55 text-center text-[0.55rem] font-semibold uppercase tracking-[0.18em] text-muted sm:text-[0.62rem]">
-      <span class="py-2">Dom</span>
-      <span class="py-2">Seg</span>
-      <span class="py-2">Ter</span>
-      <span class="py-2">Qua</span>
-      <span class="py-2">Qui</span>
-      <span class="py-2">Sex</span>
-      <span class="py-2">Sáb</span>
+    <div class="grid grid-cols-7 border-b border-ink/20 bg-ink text-center text-[0.55rem] font-semibold uppercase tracking-[0.18em] text-paper/70 sm:text-[0.62rem]">
+      <span class="py-2.5">Dom</span>
+      <span class="py-2.5">Seg</span>
+      <span class="py-2.5">Ter</span>
+      <span class="py-2.5">Qua</span>
+      <span class="py-2.5">Qui</span>
+      <span class="py-2.5">Sex</span>
+      <span class="py-2.5">Sáb</span>
     </div>
 
     <div class="grid grid-cols-7 border-t border-l border-line/40">
@@ -54,9 +54,9 @@
             <span class="calendario-numero {% if not dia.no_mes %}text-muted/30{% endif %}">{{ dia.numero }}</span>
 
             {% if dia.reservas %}
-              <span class="mt-1 flex flex-wrap gap-1 sm:hidden" aria-hidden="true">
+              <span class="mt-1.5 flex flex-wrap gap-1 sm:hidden" aria-hidden="true">
                 {% for item in dia.reservas %}
-                  <span class="calendario-ponto
+                  <span class="calendario-ponto calendario-ponto-lg
                     {% if item.tom == 'confirmada' %}bg-ok
                     {% elif item.tom == 'em_analise' %}bg-lagoon
                     {% elif item.tom == 'aguardando_comprovante' %}bg-warn
@@ -87,12 +87,12 @@
 
   <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted">
     {% if calendario.total %}
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto calendario-ponto-lg bg-ok"></span>Confirmada</span>
-        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto calendario-ponto-lg bg-lagoon"></span>Em análise</span>
-        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto calendario-ponto-lg bg-warn"></span>Aguardando comprovante</span>
-        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto calendario-ponto-lg bg-danger"></span>Recusada</span>
-        <span class="inline-flex items-center gap-1.5"><span class="calendario-ponto calendario-ponto-lg bg-muted/50"></span>Ocupado por outro morador</span>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="inline-flex items-center gap-2 rounded-full border border-ok/25 bg-white/70 px-3 py-1.5 text-[0.7rem] font-semibold text-ink"><span class="calendario-ponto calendario-ponto-lg bg-ok"></span>Confirmada</span>
+        <span class="inline-flex items-center gap-2 rounded-full border border-lagoon/25 bg-white/70 px-3 py-1.5 text-[0.7rem] font-semibold text-ink"><span class="calendario-ponto calendario-ponto-lg bg-lagoon"></span>Em anǭlise</span>
+        <span class="inline-flex items-center gap-2 rounded-full border border-warn/25 bg-white/70 px-3 py-1.5 text-[0.7rem] font-semibold text-ink"><span class="calendario-ponto calendario-ponto-lg bg-warn"></span>Aguardando comprovante</span>
+        <span class="inline-flex items-center gap-2 rounded-full border border-danger/25 bg-white/70 px-3 py-1.5 text-[0.7rem] font-semibold text-ink"><span class="calendario-ponto calendario-ponto-lg bg-danger"></span>Recusada</span>
+        <span class="inline-flex items-center gap-2 rounded-full border border-line bg-white/70 px-3 py-1.5 text-[0.7rem] font-semibold text-ink"><span class="calendario-ponto calendario-ponto-lg bg-muted/50"></span>Ocupado por outro morador</span>
       </div>
       <span>{{ calendario.total }} reserva{{ calendario.total|pluralize }} no mês</span>
     {% else %}

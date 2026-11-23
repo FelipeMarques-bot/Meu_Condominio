@@ -296,7 +296,8 @@ class AnaliseReservaTests(TestCase):
             reverse(
                 "confirmar_reserva",
                 kwargs={"slug": self.condominio.slug, "pk": self.reserva.pk},
-            )
+            ),
+            {"confirmo_analise": "on"},
         )
 
         self.reserva.refresh_from_db()
@@ -308,6 +309,25 @@ class AnaliseReservaTests(TestCase):
         self.assertIsNotNone(self.reserva.confirmado_em)
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(self.reserva.codigo_checkin, mail.outbox[0].body)
+
+    def test_confirmar_exige_conferencia_do_comprovante(self):
+        resposta = self.client.post(
+            reverse(
+                "confirmar_reserva",
+                kwargs={"slug": self.condominio.slug, "pk": self.reserva.pk},
+            )
+        )
+
+        self.reserva.refresh_from_db()
+        self.assertEqual(self.reserva.status, Reserva.Status.EM_ANALISE)
+        self.assertRedirects(
+            resposta,
+            reverse(
+                "analise_reserva",
+                kwargs={"slug": self.condominio.slug, "pk": self.reserva.pk},
+            ),
+            fetch_redirect_response=False,
+        )
 
     def test_confirmar_bloqueia_conflito_com_outra_confirmada(self):
         criar_reserva(
@@ -322,7 +342,8 @@ class AnaliseReservaTests(TestCase):
             reverse(
                 "confirmar_reserva",
                 kwargs={"slug": self.condominio.slug, "pk": self.reserva.pk},
-            )
+            ),
+            {"confirmo_analise": "on"},
         )
 
         self.reserva.refresh_from_db()
@@ -564,3 +585,50 @@ class ComprovantePrivadoTests(TestCase):
         self.client.force_login(self.morador)
 
         self.assertEqual(self.client.get(self.url).status_code, 404)
+
+
+class ResultadoAnaliseAvisoTests(TestCase):
+    def setUp(self):
+        self.condominio, self.local, self.unidade = criar_base()
+        self.morador = criar_morador(self.unidade)
+        self.reserva = criar_reserva(
+            self.condominio,
+            self.local,
+            self.unidade,
+            self.morador,
+            status=Reserva.Status.CONFIRMADA,
+        )
+        self.client.force_login(self.morador)
+
+    def test_morador_ve_aviso_ate_marcar_como_visto(self):
+        resposta = self.client.get(
+            reverse("agenda", kwargs={"slug": self.condominio.slug})
+        )
+
+        self.assertContains(resposta, "Reserva confirmada!")
+        self.assertContains(resposta, "Ver minhas reservas")
+
+        self.client.post(
+            reverse(
+                "marcar_resultados_vistos",
+                kwargs={"slug": self.condominio.slug},
+            )
+        )
+
+        self.reserva.refresh_from_db()
+        self.assertIsNotNone(self.reserva.resultado_visto_em)
+        resposta = self.client.get(
+            reverse("agenda", kwargs={"slug": self.condominio.slug})
+        )
+        self.assertNotContains(resposta, "Reserva confirmada!")
+
+    def test_abrir_detalhe_marca_resultado_como_visto(self):
+        self.client.get(
+            reverse(
+                "reserva_detalhe",
+                kwargs={"slug": self.condominio.slug, "pk": self.reserva.pk},
+            )
+        )
+
+        self.reserva.refresh_from_db()
+        self.assertIsNotNone(self.reserva.resultado_visto_em)

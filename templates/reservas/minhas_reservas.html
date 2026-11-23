@@ -15,6 +15,8 @@
     <a href="{% url 'agenda' slug=condominio.slug %}" class="btn btn-primary w-fit">Nova reserva</a>
   </div>
 
+  {% include "reservas/_resultado_aviso.html" %}
+
   <div class="sem-anim" x-data="calendarioDias()" @keydown.escape.window="fechar()">
     {% include "reservas/_calendario.html" %}
     {% include "reservas/_calendario_modal.html" %}

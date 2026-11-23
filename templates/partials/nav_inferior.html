@@ -3,7 +3,7 @@
   data-nav-inferior
   x-data="{ mais: false }"
   x-effect="document.documentElement.classList.toggle('nav-aberto', mais)"
-  class="fixed inset-x-0 bottom-0 z-40 border-t border-line/80 bg-paper/92 backdrop-blur-xl lg:hidden"
+  class="fixed inset-x-0 bottom-0 z-40 border-t border-line/50 bg-paper/70 shadow-[0_-12px_36px_-26px_rgba(12,27,31,0.5)] backdrop-blur-2xl backdrop-saturate-150 lg:hidden"
   style="padding-bottom: env(safe-area-inset-bottom)"
   aria-label="Navegação principal"
 >
@@ -125,7 +125,7 @@
       role="dialog"
       aria-modal="true"
       aria-label="Mais opções"
-      class="absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-y-auto rounded-t-3xl border-t border-line bg-paper px-5 pt-4 shadow-[0_-20px_60px_-40px_rgba(12,27,31,0.6)]"
+      class="absolute inset-x-0 bottom-0 max-h-[82dvh] overflow-y-auto rounded-t-3xl border-t border-line/60 bg-paper/90 px-5 pt-4 shadow-[0_-20px_60px_-40px_rgba(12,27,31,0.6)] backdrop-blur-2xl backdrop-saturate-150"
       style="padding-bottom: calc(1.5rem + env(safe-area-inset-bottom))"
       x-show="mais"
       x-transition:enter="transition ease-out duration-250"

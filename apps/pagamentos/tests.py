@@ -45,6 +45,12 @@ class BrCodeTests(SimpleTestCase):
 
         self.assertTrue(gerar_qr_data_uri(payload).startswith("data:image/png;base64,"))
 
+    def test_payload_sem_valor_permite_digitar_no_banco(self):
+        payload = gerar_payload("chave", "Plataforma", "Brasil")
+
+        self.assertNotIn("5405", payload)
+        self.assertEqual(payload[-4:], crc16(payload[:-4]))
+
 
 class RespostaFalsa:
     def __init__(self, corpo: dict):

@@ -96,6 +96,11 @@ class Reserva(models.Model):
     pix_pago_em = models.DateTimeField(null=True, blank=True)
     codigo_checkin = models.CharField(max_length=8, blank=True)
     motivo_rejeicao = models.TextField(blank=True)
+    resultado_visto_em = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Quando o morador viu o resultado da análise pela última vez.",
+    )
     prazo_alertado = models.BooleanField(default=False)
     lembrete_enviado = models.BooleanField(default=False)
     checkin_em = models.DateTimeField(null=True, blank=True)

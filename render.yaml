@@ -78,6 +78,10 @@ services:
         value: "5"
       - key: PLANO_PIX_CHAVE
         sync: false
+      - key: PLANO_PIX_BENEFICIARIO
+        sync: false
+      - key: PLANO_PIX_CIDADE
+        sync: false
       - key: PLANO_WHATSAPP
         sync: false
       - key: PLANO_WHATSAPP_MENSAGEM

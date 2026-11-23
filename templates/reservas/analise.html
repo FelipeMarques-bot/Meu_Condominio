@@ -82,9 +82,23 @@
       </div>
 
       {% if reserva.status == 'em_analise' and reserva.comprovante %}
+        <div class="mt-5 rounded-2xl border border-warn/30 bg-warn/10 p-4 text-sm">
+          <p class="font-semibold">Confira o comprovante</p>
+          <p class="mt-1 text-xs leading-relaxed text-muted">
+            O sistema nǜo lǦ o conteǧdo do arquivo. Abra a imagem ou o PDF e verifique
+            se Ǹ um comprovante de pagamento, se a data Ǹ desta reserva e se o valor confere.
+            Se algo estiver errado, recuse e explique o motivo ao morador.
+          </p>
+        </div>
+
         <div class="mt-6 grid gap-3 sm:grid-cols-2">
-          <form method="post" action="{% url 'confirmar_reserva' slug=condominio.slug pk=reserva.pk %}">
+          <form method="post" action="{% url 'confirmar_reserva' slug=condominio.slug pk=reserva.pk %}" class="space-y-3">
             {% csrf_token %}
+            <label class="flex items-start gap-2 text-xs leading-relaxed text-muted">
+              <input type="checkbox" name="confirmo_analise" required
+                     class="mt-0.5 h-4 w-4 shrink-0 rounded border-line text-lagoon focus:ring-lagoon">
+              <span>Abri e conferi o comprovante. Ele Ǹ de pagamento, Ǹ desta reserva e o valor confere.</span>
+            </label>
             <button type="submit" class="btn btn-primary w-full">Confirmar reserva</button>
           </form>
           <button type="button" class="btn btn-ghost w-full text-danger" onclick="document.getElementById('form-recusar').classList.toggle('hidden'); document.getElementById('motivo').focus()">

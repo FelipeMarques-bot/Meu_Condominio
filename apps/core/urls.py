@@ -62,6 +62,11 @@ urlpatterns = [
     path("c/<slug:slug>/", views.painel_redirect, name="painel_redirect"),
     path("c/<slug:slug>/agenda/", views.agenda, name="agenda"),
     path("c/<slug:slug>/assinatura/", views.assinatura, name="assinatura"),
+    path(
+        "c/<slug:slug>/acesso-suspenso/",
+        views.acesso_suspenso,
+        name="acesso_suspenso",
+    ),
     path("c/<slug:slug>/conta/", views.minha_conta, name="minha_conta"),
     path(
         "c/<slug:slug>/conta/senha/",

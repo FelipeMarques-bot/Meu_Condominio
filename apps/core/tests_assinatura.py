@@ -61,6 +61,13 @@ class AcessoPorAssinaturaTests(TestCase):
         self.assertContains(resposta, "restantes")
         self.assertContains(resposta, "Ativar meu plano")
 
+    def test_dias_de_trial_nao_mostra_um_dia_a_menos(self):
+        condominio, _, _ = criar_base(
+            trial_ate=timezone.now() + timedelta(days=10) - timedelta(minutes=5)
+        )
+
+        self.assertEqual(condominio.dias_de_trial, 10)
+
     def test_trial_expirado_bloqueia_agenda(self):
         condominio, _, sindico = criar_base(
             trial_ate=timezone.now() - timedelta(hours=1)
@@ -87,6 +94,68 @@ class AcessoPorAssinaturaTests(TestCase):
         resposta = self.client.get(reverse("minha_conta", args=[condominio.slug]))
 
         self.assertEqual(resposta.status_code, 200)
+
+    def _criar_morador(self, unidade):
+        morador = Usuario.objects.create_user(
+            username="morador", email="morador@example.com", password=SENHA
+        )
+        VinculoUnidade.objects.create(
+            usuario=morador,
+            unidade=unidade,
+            papel=VinculoUnidade.Papel.MORADOR,
+        )
+        return morador
+
+    def test_morador_nao_ve_aviso_de_trial(self):
+        condominio, unidade, _ = criar_base(
+            trial_ate=timezone.now() + timedelta(days=5)
+        )
+        morador = self._criar_morador(unidade)
+        self.client.force_login(morador)
+
+        resposta = self.client.get(reverse("agenda", args=[condominio.slug]))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertNotContains(resposta, "restantes")
+        self.assertNotContains(resposta, "Ativar meu plano")
+
+    def test_morador_sem_acesso_ve_mensagem_sem_dados_do_plano(self):
+        condominio, unidade, _ = criar_base(
+            trial_ate=timezone.now() - timedelta(hours=1)
+        )
+        morador = self._criar_morador(unidade)
+        self.client.force_login(morador)
+
+        resposta = self.client.get(reverse("agenda", args=[condominio.slug]))
+
+        self.assertRedirects(
+            resposta,
+            reverse("acesso_suspenso", args=[condominio.slug]),
+            fetch_redirect_response=False,
+        )
+        pagina = self.client.get(
+            reverse("acesso_suspenso", args=[condominio.slug])
+        )
+        self.assertEqual(pagina.status_code, 403)
+        self.assertContains(
+            pagina, "Acesso temporariamente suspenso", status_code=403
+        )
+        self.assertNotContains(pagina, "Pagar e reativar", status_code=403)
+
+    def test_morador_nao_acessa_tela_do_plano(self):
+        condominio, unidade, _ = criar_base(
+            trial_ate=timezone.now() + timedelta(days=5)
+        )
+        morador = self._criar_morador(unidade)
+        self.client.force_login(morador)
+
+        resposta = self.client.get(reverse("assinatura", args=[condominio.slug]))
+
+        self.assertRedirects(
+            resposta,
+            reverse("agenda", args=[condominio.slug]),
+            fetch_redirect_response=False,
+        )
 
     def test_plano_pago_libera_acesso(self):
         condominio, _, sindico = criar_base(
@@ -160,6 +229,20 @@ class PagamentoPlanoTests(TestCase):
             "labintelligenceappoiments@gmail.com",
             mail.outbox[0].to,
         )
+
+    @override_settings(
+        PLANO_PIX_CHAVE="plataforma@example.com",
+        PLANO_PIX_BENEFICIARIO="MEU CONDOMINIO",
+        PLANO_PIX_CIDADE="BRASIL",
+    )
+    def test_assinatura_exibe_qr_pix_sem_valor(self):
+        resposta = self.client.get(
+            reverse("assinatura", args=[self.condominio.slug])
+        )
+
+        self.assertContains(resposta, "QR Code Pix da plataforma")
+        self.assertContains(resposta, "Pix copia e cola")
+        self.assertContains(resposta, "000201")
 
     def test_nao_aceita_dois_comprovantes_pendentes(self):
         PagamentoPlano.objects.create(

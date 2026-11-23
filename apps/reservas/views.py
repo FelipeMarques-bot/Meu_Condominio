@@ -24,6 +24,7 @@ from apps.core.notifications import (
     notificar_reserva_rejeitada,
 )
 from apps.core.permissoes import (
+    pode_gerir,
     pode_ver_reserva,
     sindico_required,
     unidades_do_usuario,
@@ -35,6 +36,7 @@ from .codigos import gerar_codigo_checkin
 from .forms import ComprovanteForm, ListaEsperaForm, ReservaForm
 from .models import ListaEspera, Local, Reserva
 from .prazos import liberar_lista_espera
+from .resultados import resultados_nao_vistos
 
 HOLD_HORAS = 2
 
@@ -265,6 +267,7 @@ def minhas_reservas(request, slug):
             "condominio": condominio,
             "reservas": reservas,
             "esperas": esperas,
+            "resultados_novos": resultados_nao_vistos(request.user, condominio),
             "calendario": _calendario_do_mes(
                 request,
                 condominio,
@@ -276,10 +279,29 @@ def minhas_reservas(request, slug):
 
 
 @login_required
+def marcar_resultados_vistos(request, slug):
+    condominio = _condominio(request)
+    if request.method != "POST":
+        raise Http404
+    resultados_nao_vistos(request.user, condominio).update(
+        resultado_visto_em=timezone.now()
+    )
+    return redirect("minhas_reservas", slug=condominio.slug)
+
+
+@login_required
 def reserva_detalhe(request, slug, pk):
     condominio = _condominio(request)
     reserva = _reserva_para_usuario(request, pk)
     configuracao = _configuracao(condominio)
+
+    if (
+        not pode_gerir(request.user, condominio)
+        and reserva.status in {Reserva.Status.CONFIRMADA, Reserva.Status.REJEITADA}
+        and reserva.resultado_visto_em is None
+    ):
+        reserva.resultado_visto_em = timezone.now()
+        reserva.save(update_fields=["resultado_visto_em"])
 
     return render(
         request,
@@ -508,6 +530,13 @@ def confirmar_reserva(request, slug, pk):
         messages.error(request, "Esta reserva não está pronta para confirmação.")
         return redirect("analise_reserva", slug=slug, pk=pk)
 
+    if request.POST.get("confirmo_analise") != "on":
+        messages.error(
+            request,
+            "Confirme que vocǦ abriu e conferiu o comprovante antes de aprovar.",
+        )
+        return redirect("analise_reserva", slug=slug, pk=pk)
+
     conflito = (
         Reserva.objects.filter(
             local=reserva.local,
@@ -525,8 +554,15 @@ def confirmar_reserva(request, slug, pk):
         reserva.status = Reserva.Status.CONFIRMADA
         reserva.confirmado_em = timezone.now()
         reserva.codigo_checkin = gerar_codigo_checkin(condominio)
+        reserva.resultado_visto_em = None
         reserva.save(
-            update_fields=["status", "confirmado_em", "codigo_checkin", "atualizado_em"]
+            update_fields=[
+                "status",
+                "confirmado_em",
+                "codigo_checkin",
+                "resultado_visto_em",
+                "atualizado_em",
+            ]
         )
 
     notificar_reserva_confirmada(reserva)
@@ -550,7 +586,15 @@ def rejeitar_reserva(request, slug, pk):
 
     reserva.status = Reserva.Status.REJEITADA
     reserva.motivo_rejeicao = motivo[:1000]
-    reserva.save(update_fields=["status", "motivo_rejeicao", "atualizado_em"])
+    reserva.resultado_visto_em = None
+    reserva.save(
+        update_fields=[
+            "status",
+            "motivo_rejeicao",
+            "resultado_visto_em",
+            "atualizado_em",
+        ]
+    )
 
     notificar_reserva_rejeitada(reserva)
     messages.success(request, "Comprovante recusado e morador notificado.")
