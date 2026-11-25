@@ -1,0 +1,39 @@
+{% if reservas_para_confirmar_hoje %}
+  <div class="anim-aviso mb-6 space-y-3">
+    {% for reserva in reservas_para_confirmar_hoje %}
+      <div class="overflow-hidden rounded-3xl border-2 border-lagoon/45 bg-lagoon text-paper shadow-[0_26px_60px_-34px_rgba(14,74,85,0.9)]">
+        <div class="p-4 sm:p-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-paper/70">Hoje é o dia</p>
+              <p class="mt-1 font-display text-2xl leading-tight">Confirme o uso com foto</p>
+              <p class="mt-1 text-sm text-paper/85">
+                {{ reserva.local.nome }} · {{ reserva.inicio|time:"H:i" }} às {{ reserva.fim|time:"H:i" }} · {{ reserva.unidade.rotulo }}
+              </p>
+            </div>
+            <span class="pill border-paper/30 bg-paper/15 text-paper">Check-in pendente</span>
+          </div>
+
+          <div class="mt-4 flex flex-wrap items-center gap-3">
+            <a href="{% url 'confirmar_uso' slug=condominio.slug pk=reserva.pk %}" class="btn bg-paper px-5 py-2.5 text-ink hover:bg-white">
+              <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4" aria-hidden="true">
+                <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.2l1-1.6A1 1 0 0 1 9.5 4h5a1 1 0 0 1 .8.4l1 1.6h1.2A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                <circle cx="12" cy="12.4" r="3.2" stroke="currentColor" stroke-width="1.6"/>
+              </svg>
+              Abrir câmera
+            </a>
+            {% if reserva.codigo_checkin %}
+              <p class="text-xs text-paper/80">
+                Ou mostre o código
+                <span class="ml-1 rounded-lg bg-paper/15 px-2 py-1 font-mono text-[0.8rem] tracking-[0.24em] text-paper">{{ reserva.codigo_checkin }}</span>
+              </p>
+            {% endif %}
+          </div>
+          <p class="mt-3 text-[0.68rem] leading-relaxed text-paper/70">
+            O QR code do local também funciona: aponte a câmera para ele no dia da reserva.
+          </p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}

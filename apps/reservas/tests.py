@@ -632,3 +632,104 @@ class ResultadoAnaliseAvisoTests(TestCase):
 
         self.reserva.refresh_from_db()
         self.assertIsNotNone(self.reserva.resultado_visto_em)
+
+class ConfirmarUsoComFotoTests(TestCase):
+    def setUp(self):
+        self.media = tempfile.mkdtemp()
+        self.override_media = override_settings(MEDIA_ROOT=self.media)
+        self.override_media.enable()
+        self.addCleanup(self.override_media.disable)
+
+        self.condominio, self.local, self.unidade = criar_base()
+        self.morador = criar_morador(self.unidade)
+        self.sindico = criar_sindico(self.condominio, self.unidade)
+
+        hoje = timezone.localtime()
+        self.inicio = hoje.replace(hour=10, minute=0, second=0, microsecond=0)
+        self.reserva = Reserva.objects.create(
+            condominio=self.condominio,
+            local=self.local,
+            unidade=self.unidade,
+            solicitante=self.morador,
+            inicio=self.inicio,
+            fim=self.inicio + timedelta(hours=4),
+            valor=self.local.valor,
+            status=Reserva.Status.CONFIRMADA,
+            codigo_checkin="ABC123",
+        )
+        self.url = reverse(
+            "confirmar_uso",
+            kwargs={"slug": self.condominio.slug, "pk": self.reserva.pk},
+        )
+        self.client.force_login(self.morador)
+
+    def _foto(self, nome="uso.jpg"):
+        return SimpleUploadedFile(
+            nome, b"\xff\xd8\xff\xe0foto-de-teste", content_type="image/jpeg"
+        )
+
+    def test_pagina_pede_foto_com_camera(self):
+        resposta = self.client.get(self.url)
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, 'capture="environment"')
+        self.assertContains(resposta, "Foto do espaço (obrigatória)")
+
+    def test_sem_foto_nao_registra_checkin(self):
+        resposta = self.client.post(self.url, {})
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Tire uma foto do espaço")
+        self.reserva.refresh_from_db()
+        self.assertIsNone(self.reserva.checkin_em)
+        self.assertFalse(self.reserva.checkin_foto)
+
+    def test_com_foto_registra_uso(self):
+        resposta = self.client.post(self.url, {"foto": self._foto()})
+
+        self.assertEqual(resposta.status_code, 302)
+        self.reserva.refresh_from_db()
+        self.assertIsNotNone(self.reserva.checkin_em)
+        self.assertTrue(self.reserva.checkin_foto)
+        self.assertEqual(self.reserva.checkin_por, self.morador)
+
+    def test_fora_do_dia_da_reserva_nao_permite(self):
+        amanha = timezone.localtime() + timedelta(days=1)
+        self.reserva.inicio = amanha.replace(hour=10, minute=0, second=0, microsecond=0)
+        self.reserva.fim = self.reserva.inicio + timedelta(hours=4)
+        self.reserva.save(update_fields=["inicio", "fim"])
+
+        self.client.post(self.url, {"foto": self._foto()})
+
+        self.reserva.refresh_from_db()
+        self.assertIsNone(self.reserva.checkin_em)
+
+    def test_sindico_nao_fecha_checkin_sem_foto_do_morador(self):
+        self.client.force_login(self.sindico)
+
+        resposta = self.client.post(
+            reverse("checkin", kwargs={"slug": self.condominio.slug}),
+            {"codigo": "ABC123"},
+            follow=True,
+        )
+
+        self.assertContains(resposta, "ainda não confirmou o uso com foto")
+        self.reserva.refresh_from_db()
+        self.assertIsNone(self.reserva.checkin_em)
+
+    def test_sindico_fecha_checkin_depois_da_foto(self):
+        self.client.post(self.url, {"foto": self._foto()})
+        self.reserva.refresh_from_db()
+        self.reserva.checkin_em = None
+        self.reserva.save(update_fields=["checkin_em"])
+
+        self.client.force_login(self.sindico)
+        resposta = self.client.post(
+            reverse("checkin", kwargs={"slug": self.condominio.slug}),
+            {"codigo": "ABC123"},
+            follow=True,
+        )
+
+        self.assertContains(resposta, "Check-in confirmado")
+        self.reserva.refresh_from_db()
+        self.assertIsNotNone(self.reserva.checkin_em)

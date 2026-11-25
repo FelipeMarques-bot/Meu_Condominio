@@ -380,16 +380,35 @@ class RedefinirSenhaTests(TestCase):
 
 
 class MeusCondominiosTests(TestCase):
-    def test_sindico_ve_o_condominio_na_lista(self):
+    def test_sindico_com_um_condominio_vai_direto_para_agenda(self):
         condominio, unidade = criar_base()
         sindico = criar_sindico(unidade)
         self.client.force_login(sindico)
 
         resposta = self.client.get(reverse("meus_condominios"))
 
+        self.assertRedirects(
+            resposta,
+            reverse("agenda", kwargs={"slug": condominio.slug}),
+        )
+
+    def test_sindico_com_dois_condominios_ve_o_seletor(self):
+        condominio, unidade = criar_base()
+        sindico = criar_sindico(unidade)
+        outro = Condominio.objects.create(nome="Jardim das Flores", slug="jardim")
+        Unidade.objects.create(condominio=outro, numero="202")
+        VinculoUnidade.objects.create(
+            usuario=sindico,
+            unidade=Unidade.objects.get(condominio=outro),
+            papel=VinculoUnidade.Papel.SINDICO,
+        )
+        self.client.force_login(sindico)
+
+        resposta = self.client.get(reverse("meus_condominios"))
+
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, condominio.nome)
-        self.assertContains(resposta, "Gerenciar")
+        self.assertContains(resposta, "Escolha o condomínio")
 
     def test_login_do_sindico_vai_para_a_gestao(self):
         condominio, unidade = criar_base()

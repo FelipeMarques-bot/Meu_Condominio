@@ -1,3 +1,4 @@
+from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -5,8 +6,9 @@ from unittest.mock import patch
 from django.conf import settings
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
-from apps.reservas.models import Local
+from apps.reservas.models import Local, Reserva
 
 from .context_processors import _voltar_url
 from .models import Condominio, ConfiguracaoCondominio
@@ -218,3 +220,90 @@ class OrtografiaDosTextosTests(TestCase):
                 problemas.append(caminho.relative_to(raiz).as_posix())
 
         self.assertEqual(problemas, [])
+
+class TrocaDeCondominioTests(TestCase):
+    def setUp(self):
+        from apps.usuarios.models import Unidade, Usuario, VinculoUnidade
+
+        self.condominio = criar_condominio("Bela Vista", "bela-vista")
+        self.outro = criar_condominio("Jardim das Flores", "jardim")
+        self.unidade = Unidade.objects.create(condominio=self.condominio, numero="101")
+        self.usuario = Usuario.objects.create_user(
+            username="morador", email="morador@example.com", password="Senha-Forte-2026"
+        )
+        VinculoUnidade.objects.create(
+            usuario=self.usuario,
+            unidade=self.unidade,
+            papel=VinculoUnidade.Papel.MORADOR,
+        )
+        self.client.force_login(self.usuario)
+
+    def test_usuario_com_um_condominio_vai_direto_para_agenda(self):
+        resposta = self.client.get(reverse("meus_condominios"))
+
+        self.assertRedirects(
+            resposta, reverse("agenda", kwargs={"slug": self.condominio.slug})
+        )
+
+    def test_menu_inicial_abre_a_agenda(self):
+        resposta = self.client.get(reverse("meu_painel"))
+
+        self.assertRedirects(
+            resposta, reverse("agenda", kwargs={"slug": self.condominio.slug})
+        )
+
+    def test_com_dois_condominios_mostra_o_seletor(self):
+        from apps.usuarios.models import Unidade, VinculoUnidade
+
+        segunda = Unidade.objects.create(condominio=self.outro, numero="202")
+        VinculoUnidade.objects.create(
+            usuario=self.usuario,
+            unidade=segunda,
+            papel=VinculoUnidade.Papel.MORADOR,
+        )
+
+        resposta = self.client.get(reverse("meus_condominios"))
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Escolha o condomínio")
+        self.assertContains(resposta, "Jardim das Flores")
+
+
+class AvisoDeReservasPendentesTests(TestCase):
+    def setUp(self):
+        from apps.reservas.models import Local as LocalReserva
+        from apps.usuarios.models import Unidade, Usuario, VinculoUnidade
+
+        self.condominio = criar_condominio("Bela Vista", "bela-vista")
+        self.local = LocalReserva.objects.create(
+            condominio=self.condominio, nome="Quiosque", slug="quiosque", valor=180
+        )
+        unidade = Unidade.objects.create(condominio=self.condominio, numero="101")
+        self.sindico = Usuario.objects.create_user(
+            username="sindico", email="sindico@example.com", password="Senha-Forte-2026"
+        )
+        VinculoUnidade.objects.create(
+            usuario=self.sindico,
+            unidade=unidade,
+            papel=VinculoUnidade.Papel.SINDICO,
+        )
+        hoje = timezone.localtime()
+        inicio = hoje.replace(hour=10, minute=0, second=0, microsecond=0)
+        self.reserva = Reserva.objects.create(
+            condominio=self.condominio,
+            local=self.local,
+            unidade=unidade,
+            inicio=inicio,
+            fim=inicio + timedelta(hours=4),
+            valor=180,
+            status=Reserva.Status.EM_ANALISE,
+        )
+        self.client.force_login(self.sindico)
+
+    def test_agenda_avisa_que_existe_reserva_esperando(self):
+        resposta = self.client.get(
+            reverse("agenda", kwargs={"slug": self.condominio.slug})
+        )
+
+        self.assertContains(resposta, "esperando você")
+        self.assertContains(resposta, "Ver no painel")

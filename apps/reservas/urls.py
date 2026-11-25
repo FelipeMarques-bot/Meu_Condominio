@@ -24,6 +24,11 @@ urlpatterns = [
     ),
     path("c/<slug:slug>/reservas/<int:pk>/", views.reserva_detalhe, name="reserva_detalhe"),
     path("c/<slug:slug>/reservas/<int:pk>/qr/", views.reserva_qr, name="reserva_qr"),
+    path(
+        "c/<slug:slug>/reservas/<int:pk>/checkin/",
+        views.confirmar_uso,
+        name="confirmar_uso",
+    ),
     path("c/<slug:slug>/reservas/<int:pk>/pagamento/", views.pagamento, name="pagamento"),
     path(
         "c/<slug:slug>/reservas/<int:pk>/comprovante/",

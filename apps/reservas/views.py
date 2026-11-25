@@ -681,9 +681,18 @@ def checkin(request, slug):
                 "Este c\u00f3digo j\u00e1 foi usado em "
                 f"{timezone.localtime(encontrada.checkin_em):%d/%m/%Y %H:%M}.",
             )
+        elif not encontrada.checkin_foto:
+            messages.error(
+                request,
+                "O morador ainda n\u00e3o confirmou o uso com foto no app. "
+                "Pe\u00e7a para ele abrir a reserva e tirar a foto do espa\u00e7o.",
+            )
         else:
             encontrada.checkin_em = timezone.now()
-            encontrada.save(update_fields=["checkin_em", "atualizado_em"])
+            encontrada.checkin_por = request.user
+            encontrada.save(
+                update_fields=["checkin_em", "checkin_por", "atualizado_em"]
+            )
             if encontrada.inicio.date() != hoje:
                 messages.warning(
                     request,
@@ -710,6 +719,63 @@ def checkin(request, slug):
             "condominio": condominio,
             "reservas": do_dia,
             "encontrada": encontrada,
+        },
+    )
+
+
+@login_required
+def confirmar_uso(request, slug, pk):
+    """Morador confirma o uso do espaço no dia, obrigatoriamente com foto."""
+    condominio = _condominio(request)
+    reserva = _reserva_para_usuario(request, pk)
+
+    if reserva.status != Reserva.Status.CONFIRMADA:
+        messages.error(
+            request, "S\u00f3 \u00e9 poss\u00edvel confirmar o uso de uma reserva confirmada."
+        )
+        return redirect("reserva_detalhe", slug=slug, pk=reserva.pk)
+
+    if reserva.inicio.date() != timezone.localdate():
+        messages.error(
+            request, "A foto de confirma\u00e7\u00e3o s\u00f3 pode ser enviada no dia da reserva."
+        )
+        return redirect("reserva_detalhe", slug=slug, pk=reserva.pk)
+
+    if reserva.checkin_em and reserva.checkin_foto:
+        messages.info(request, "O uso desta reserva j\u00e1 foi confirmado com foto.")
+        return redirect("reserva_detalhe", slug=slug, pk=reserva.pk)
+
+    if request.method == "POST":
+        foto = request.FILES.get("foto")
+        tipo = (getattr(foto, "content_type", "") or "").lower()
+        if foto is None:
+            messages.error(request, "Tire uma foto do espa\u00e7o para confirmar o uso.")
+        elif not tipo.startswith("image/"):
+            messages.error(request, "Envie uma foto em JPG, PNG ou HEIC.")
+        else:
+            with transaction.atomic():
+                reserva.checkin_foto = foto
+                reserva.checkin_em = timezone.now()
+                reserva.checkin_por = request.user
+                reserva.save(
+                    update_fields=[
+                        "checkin_foto",
+                        "checkin_em",
+                        "checkin_por",
+                        "atualizado_em",
+                    ]
+                )
+            messages.success(
+                request, "Uso confirmado com foto. Bom proveito do espa\u00e7o!"
+            )
+            return redirect("reserva_detalhe", slug=slug, pk=reserva.pk)
+
+    return render(
+        request,
+        "reservas/confirmar_uso.html",
+        {
+            "condominio": condominio,
+            "reserva": reserva,
         },
     )
 

@@ -1,0 +1,24 @@
+{% if pode_aprovar and reservas_pendentes_gestao %}
+  <div class="anim-aviso mb-6 overflow-hidden rounded-3xl border border-warn/45 bg-warn/12 shadow-[0_26px_60px_-38px_rgba(184,121,42,0.75)]" role="status" aria-live="polite">
+    <div class="flex flex-wrap items-center gap-4 p-4 sm:p-5">
+      <span class="analise-ponto grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-warn text-paper">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5" aria-hidden="true">
+          <path d="M12 4a5 5 0 0 0-5 5v3.2L5.6 16h12.8L17 12.2V9a5 5 0 0 0-5-5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M9.5 19a2.5 2.5 0 0 0 5 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <div class="min-w-0 flex-1">
+        <p class="text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-warn">Notificação</p>
+        <p class="mt-1 font-display text-xl leading-tight text-ink">
+          {{ reservas_pendentes_gestao }} reserva{{ reservas_pendentes_gestao|pluralize }} esperando você
+        </p>
+        <p class="mt-1 text-xs leading-relaxed text-muted">
+          Há pedidos de moradores aguardando comprovante ou conferência. Abra o painel para aprovar ou recusar.
+        </p>
+      </div>
+      <a href="{% url 'painel' slug=condominio.slug %}" class="btn btn-primary shrink-0 px-4 py-2.5 text-xs">
+        Ver no painel
+      </a>
+    </div>
+  </div>
+{% endif %}

@@ -26,7 +26,7 @@
     </nav>
 
     {% if user.is_authenticated %}
-      <a href="{% url 'meus_condominios' %}" class="btn btn-primary hidden md:inline-flex">Meu painel</a>
+      <a href="{% url 'meu_painel' %}" class="btn btn-primary hidden md:inline-flex">Meu painel</a>
     {% else %}
       <a href="{% url 'login' %}" class="btn btn-ghost hidden md:inline-flex">Entrar</a>
       <a href="{% url 'criar_condominio' %}" class="btn btn-primary hidden md:inline-flex">Criar condomínio</a>
@@ -112,7 +112,7 @@
 
       <div class="mt-auto space-y-3 pt-8">
         {% if user.is_authenticated %}
-          <a href="{% url 'meus_condominios' %}" @click="menu = false" class="btn btn-primary w-full justify-center py-4 text-base">
+          <a href="{% url 'meu_painel' %}" @click="menu = false" class="btn btn-primary w-full justify-center py-4 text-base">
             Meu painel
           </a>
         {% else %}
@@ -169,7 +169,7 @@
 
       <div class="reveal mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
         {% if user.is_authenticated %}
-          <a href="{% url 'meus_condominios' %}" class="btn btn-primary">
+          <a href="{% url 'meu_painel' %}" class="btn btn-primary">
             Abrir meu painel
             <svg viewBox="0 0 20 20" fill="none" class="h-4 w-4" aria-hidden="true">
               <path d="M4 10h12m-5-5 5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>

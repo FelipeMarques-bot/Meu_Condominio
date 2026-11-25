@@ -26,6 +26,7 @@ urlpatterns = [
         name="confirmar_email",
     ),
     path("meus-condominios/", views.meus_condominios, name="meus_condominios"),
+    path("meu-painel/", views.meu_painel, name="meu_painel"),
     path("sair/", auth_views.LogoutView.as_view(), name="logout"),
     path("plataforma/entrar/", views.plataforma_entrar, name="plataforma_entrar"),
     path("plataforma/", views.plataforma_painel, name="plataforma"),

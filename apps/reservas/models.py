@@ -104,6 +104,20 @@ class Reserva(models.Model):
     prazo_alertado = models.BooleanField(default=False)
     lembrete_enviado = models.BooleanField(default=False)
     checkin_em = models.DateTimeField(null=True, blank=True)
+    checkin_foto = models.ImageField(
+        upload_to="checkins/%Y/%m/",
+        storage=armazenamento_privado,
+        blank=True,
+        help_text="Foto tirada pelo morador no dia da reserva para confirmar o uso.",
+    )
+    checkin_por = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="checkins_confirmados",
+        help_text="Quem confirmou o uso do espaço com foto.",
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 

@@ -125,7 +125,8 @@ def notificar_reserva_confirmada(reserva) -> None:
             f"Espaço: {reserva.local.nome}\n"
             f"Data: {_data_hora(reserva)}\n"
             f"Código de check-in: {reserva.codigo_checkin}\n\n"
-            "Apresente o código no dia do uso."
+            "No dia da reserva, abra o app e tire uma foto do espaço para "
+            "confirmar o uso. O código e o QR code continuam válidos para a portaria."
         ),
         [reserva.solicitante.email],
     )
@@ -226,7 +227,8 @@ def notificar_lembrete_reserva(reserva) -> None:
             f"Espaço: {reserva.local.nome}\n"
             f"Data: {_data_hora(reserva)}\n"
             f"Código de check-in: {reserva.codigo_checkin}\n\n"
-            "Leve o código para apresentar no local."
+            "No dia da reserva, confirme o uso com uma foto pelo app. "
+            "O código e o QR code também servem para a portaria."
         ),
         [reserva.solicitante.email],
     )

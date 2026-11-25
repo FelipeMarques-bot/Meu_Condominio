@@ -137,6 +137,8 @@ class CheckinTests(TestCase):
 
     def test_sindico_registra_checkin(self):
         self.client.force_login(self.sindico)
+        self.reserva.checkin_foto = "checkins/foto-do-morador.jpg"
+        self.reserva.save(update_fields=["checkin_foto"])
 
         resposta = self.client.post(
             reverse("checkin", kwargs={"slug": self.condominio.slug}),
@@ -146,6 +148,17 @@ class CheckinTests(TestCase):
         self.assertEqual(resposta.status_code, 200)
         self.reserva.refresh_from_db()
         self.assertIsNotNone(self.reserva.checkin_em)
+
+    def test_sem_foto_do_morador_o_codigo_nao_fecha_o_checkin(self):
+        self.client.force_login(self.sindico)
+
+        self.client.post(
+            reverse("checkin", kwargs={"slug": self.condominio.slug}),
+            {"codigo": "abc123"},
+        )
+
+        self.reserva.refresh_from_db()
+        self.assertIsNone(self.reserva.checkin_em)
 
     def test_codigo_invalido_nao_registra(self):
         self.client.force_login(self.sindico)

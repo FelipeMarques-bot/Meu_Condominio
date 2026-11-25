@@ -48,6 +48,74 @@ Alpine.data("calendarioDias", () => ({
   },
 }));
 
+Alpine.data("avisoResultado", (chave) => ({
+  aberto: true,
+  temporizador: 0,
+
+  iniciar() {
+    try {
+      if (sessionStorage.getItem(chave)) {
+        this.aberto = false;
+        return;
+      }
+    } catch {
+      /* sessionStorage indisponível */
+    }
+    this.temporizador = window.setTimeout(() => this.fechar(), 12000);
+  },
+
+  fechar() {
+    this.aberto = false;
+    window.clearTimeout(this.temporizador);
+    try {
+      sessionStorage.setItem(chave, "1");
+    } catch {
+      /* sem sessionStorage: esconde só nesta página */
+    }
+  },
+}));
+
+/* Transição entre páginas: usa a nativa quando existe, senão um fade curto. */
+const suportaTransicaoNativa = typeof document.startViewTransition === "function";
+const reduzMovimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+if (!suportaTransicaoNativa && !reduzMovimento) {
+  document.addEventListener("click", (evento) => {
+    if (evento.defaultPrevented || evento.button !== 0) return;
+    if (evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey) return;
+
+    const link = evento.target.closest("a[href]");
+    if (!link || link.target === "_blank" || link.hasAttribute("download")) return;
+    if (link.dataset.semTransicao !== undefined) return;
+    if (link.closest("[data-sem-transicao]")) return;
+    if (link.getAttribute("href").startsWith("#")) return;
+
+    let destino;
+    try {
+      destino = new URL(link.href, location.href);
+    } catch {
+      return;
+    }
+    if (destino.origin !== location.origin) return;
+    if (
+      destino.pathname === location.pathname &&
+      destino.search === location.search
+    ) {
+      return;
+    }
+
+    evento.preventDefault();
+    document.body.classList.add("saindo");
+    window.setTimeout(() => {
+      location.href = destino.href;
+    }, 130);
+  });
+
+  window.addEventListener("pageshow", () => {
+    document.body.classList.remove("saindo");
+  });
+}
+
 const ehDispositivoMovel = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 const prepararCompartilhamentoWhatsApp = () => {

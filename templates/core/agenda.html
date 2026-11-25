@@ -126,9 +126,11 @@
 
     <main id="conteudo" class="mx-auto w-full max-w-6xl flex-1 px-5 pb-28 pt-8 sm:px-8 lg:pb-12 lg:pt-10">
       {% include "reservas/_resultado_aviso.html" %}
+      {% include "reservas/_confirmar_uso_aviso.html" %}
+      {% include "reservas/_pendentes_aviso.html" %}
 
       {% if user.is_authenticated %}
-        <div class="mb-7 flex flex-col gap-1 rounded-3xl border border-lagoon/20 bg-lagoon/5 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="destaque mb-7 flex flex-col gap-1 rounded-3xl px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <p class="font-display text-xl font-light">
             Olá, {{ user.first_name|default:user.username }}. Bem-vindo(a) ao {{ condominio.nome }}.
           </p>

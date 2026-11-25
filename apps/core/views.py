@@ -163,11 +163,34 @@ def meus_condominios(request):
         item["pode_gerir"] = pode_gerir(request.user, condominio)
         item["pode_aprovar"] = pode_aprovar(request.user, condominio)
 
+    if len(itens) == 1 and not request.user.is_superuser:
+        return redirect("agenda", slug=itens[0]["condominio"].slug)
+
+    if not itens and not request.user.is_superuser:
+        return redirect("criar_condominio")
+
     return render(
         request,
         "core/meus_condominios.html",
         {"itens": itens},
     )
+
+
+@login_required
+def meu_painel(request):
+    """Atalho do menu: cai direto na agenda do condomínio do usuário."""
+    if request.user.is_superuser:
+        return redirect("plataforma")
+
+    vinculo = (
+        request.user.vinculos.filter(ativo=True)
+        .select_related("unidade__condominio")
+        .order_by("unidade__condominio__nome", "pk")
+        .first()
+    )
+    if vinculo is None:
+        return redirect("criar_condominio")
+    return redirect("agenda", slug=vinculo.unidade.condominio.slug)
 
 
 def criar_condominio(request):

@@ -116,6 +116,26 @@ def _voltar_url(request) -> str:
 def marca(request):
     condominio = getattr(request, "condominio", None)
     usuario = request.user
+
+    pendentes_gestao = 0
+    para_confirmar_hoje = []
+    condominios = []
+
+    if usuario.is_authenticated:
+        from apps.reservas.resultados import (
+            condominios_do_usuario,
+            reservas_aguardando_gestao,
+            reservas_para_confirmar_hoje,
+        )
+
+        condominios = condominios_do_usuario(usuario)
+        if condominio is not None:
+            if pode_aprovar(usuario, condominio):
+                pendentes_gestao = reservas_aguardando_gestao(condominio)
+            para_confirmar_hoje = list(
+                reservas_para_confirmar_hoje(usuario, condominio)
+            )
+
     return {
         "voltar_url_padrao": _voltar_url(request),
         "site_nome": settings.SITE_NOME,
@@ -135,4 +155,8 @@ def marca(request):
         ),
         "pode_gerir": bool(condominio and pode_gerir(usuario, condominio)),
         "pode_aprovar": bool(condominio and pode_aprovar(usuario, condominio)),
+        "reservas_pendentes_gestao": pendentes_gestao,
+        "reservas_para_confirmar_hoje": para_confirmar_hoje,
+        "condominios_do_usuario": condominios,
+        "tem_varios_condominios": len(condominios) > 1,
     }
