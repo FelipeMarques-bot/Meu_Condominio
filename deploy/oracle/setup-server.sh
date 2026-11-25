@@ -23,6 +23,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
 apt-get install -y python3 python3-venv python3-dev build-essential \
   libpq-dev postgresql postgresql-contrib curl git unzip ufw \
+  tesseract-ocr tesseract-ocr-por \
   debian-keyring debian-archive-keyring apt-transport-https
 
 echo "==> Node 22 (build do Vite)"
