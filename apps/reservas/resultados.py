@@ -10,14 +10,13 @@ def resultados_nao_vistos(usuario, condominio):
     """Reservas do morador com análise nova que ele ainda não abriu."""
     if not usuario.is_authenticated:
         return Reserva.objects.none()
-    unidades = unidades_do_usuario(usuario, condominio)
     return (
         Reserva.objects.filter(
             condominio=condominio,
+            solicitante=usuario,
             status__in=[Reserva.Status.CONFIRMADA, Reserva.Status.REJEITADA],
             resultado_visto_em__isnull=True,
         )
-        .filter(Q(solicitante=usuario) | Q(unidade__in=unidades))
         .select_related("local", "unidade")
         .distinct()
         .order_by("-atualizado_em")
@@ -28,14 +27,13 @@ def esperas_avisadas_nao_vistas(usuario, condominio):
     """Vagas liberadas na lista de espera que o morador ainda não viu no app."""
     if not usuario.is_authenticated:
         return ListaEspera.objects.none()
-    unidades = unidades_do_usuario(usuario, condominio)
     return (
         ListaEspera.objects.filter(
             condominio=condominio,
+            solicitante=usuario,
             status=ListaEspera.Status.AVISADO,
             aviso_visto_em__isnull=True,
         )
-        .filter(Q(solicitante=usuario) | Q(unidade__in=unidades))
         .select_related("local", "unidade")
         .distinct()
         .order_by("-avisado_em")

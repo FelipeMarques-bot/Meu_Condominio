@@ -55,7 +55,12 @@ from .notifications import (
     notificar_pagamento_enviado,
     telegram_configurado,
 )
-from .permissoes import gestao_required, pode_aprovar, pode_gerir
+from .permissoes import (
+    gestao_required,
+    pode_aprovar,
+    pode_gerir,
+    reservas_bloqueadas,
+)
 from .trial import (
     hashes_do_cadastro,
     iniciar_trial,
@@ -574,6 +579,7 @@ def agenda(request, slug):
             "locais": locais,
             "resultados_novos": resultados_nao_vistos(request.user, condominio),
             "esperas_novas": esperas_avisadas_nao_vistas(request.user, condominio),
+            "reserva_bloqueada": reservas_bloqueadas(request.user, condominio),
         },
     )
 
@@ -796,6 +802,31 @@ def vinculo_remover(request, slug, pk):
     vinculo.delete()
     messages.success(request, f"{nome} foi desvinculado da {unidade.rotulo}.")
     return redirect("unidade_editar", slug=condominio.slug, pk=unidade.pk)
+
+
+@login_required
+@gestao_required
+def vinculo_alternar_bloqueio(request, slug, pk):
+    condominio = _condominio(request)
+    if request.method != "POST":
+        raise Http404
+
+    vinculo = get_object_or_404(
+        VinculoUnidade.objects.select_related("usuario", "unidade"),
+        pk=pk,
+        unidade__condominio=condominio,
+        unidade__administrativa=False,
+        papel=VinculoUnidade.Papel.MORADOR,
+    )
+    vinculo.bloqueio_reservas = not vinculo.bloqueio_reservas
+    vinculo.save(update_fields=["bloqueio_reservas"])
+
+    nome = vinculo.usuario.get_full_name() or vinculo.usuario.username
+    if vinculo.bloqueio_reservas:
+        messages.success(request, f"Reservas de {nome} foram bloqueadas.")
+    else:
+        messages.success(request, f"Reservas de {nome} foram liberadas.")
+    return redirect("unidade_editar", slug=condominio.slug, pk=vinculo.unidade_id)
 
 
 @login_required

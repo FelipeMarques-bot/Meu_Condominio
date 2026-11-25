@@ -11,6 +11,9 @@
     Voltar à agenda
   </a>
 
+  {% if reserva_bloqueada %}
+    {% include "reservas/_bloqueio_aviso.html" %}
+  {% else %}
   <div class="mt-4 grid gap-6 lg:grid-cols-[1fr_20rem] lg:items-start">
     <section class="card p-6">
       <p class="eyebrow">{{ local.get_categoria_display }}</p>
@@ -125,5 +128,6 @@
       </button>
     </div>
   </div>
+  {% endif %}
 </main>
 {% endblock %}

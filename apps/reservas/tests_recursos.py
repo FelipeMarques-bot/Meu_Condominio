@@ -9,6 +9,7 @@ from apps.core.notifications import link_whatsapp
 
 from .models import ListaEspera, Reserva
 from .prazos import processar_prazos
+from .resultados import resultados_nao_vistos
 from .tests import criar_base, criar_morador, criar_reserva, criar_sindico
 
 BACKEND_EMAIL = "django.core.mail.backends.locmem.EmailBackend"
@@ -195,6 +196,68 @@ class ListaEsperaTests(TestCase):
         self.assertNotContains(resposta, "Sua vaga liberou!")
 
 
+class ResultadoDaAnaliseTests(TestCase):
+    def setUp(self):
+        self.condominio, self.local, self.unidade = criar_base()
+        self.morador = criar_morador(self.unidade)
+        self.sindico = criar_sindico(self.condominio, self.unidade)
+        self.reserva = criar_reserva(
+            self.condominio,
+            self.local,
+            self.unidade,
+            self.morador,
+            status=Reserva.Status.EM_ANALISE,
+        )
+        self.motivo = (
+            "O arquivo não é um comprovante de pagamento, favor inserir "
+            "o comprovante para poder garantir a reserva!"
+        )
+        self.client.force_login(self.sindico)
+        self.client.post(
+            reverse(
+                "rejeitar_reserva",
+                kwargs={"slug": self.condominio.slug, "pk": self.reserva.pk},
+            ),
+            {"motivo": self.motivo},
+        )
+
+    def test_aviso_de_recusa_e_do_morador_e_nao_do_sindico(self):
+        self.assertFalse(resultados_nao_vistos(self.sindico, self.condominio).exists())
+        self.assertEqual(
+            [item.pk for item in resultados_nao_vistos(self.morador, self.condominio)],
+            [self.reserva.pk],
+        )
+
+    def test_sindico_pode_marcar_avisos_sem_apagar_o_do_morador(self):
+        self.client.post(
+            reverse(
+                "marcar_resultados_vistos", kwargs={"slug": self.condominio.slug}
+            )
+        )
+
+        self.assertTrue(resultados_nao_vistos(self.morador, self.condominio).exists())
+
+    def test_morador_ve_motivo_da_recusa_no_aviso(self):
+        self.client.force_login(self.morador)
+
+        resposta = self.client.get(
+            reverse("minhas_reservas", kwargs={"slug": self.condominio.slug})
+        )
+
+        self.assertContains(resposta, "Sua reserva foi recusada")
+        self.assertContains(resposta, self.motivo)
+
+    def test_sindico_ve_motivo_no_relatorio_de_analise(self):
+        resposta = self.client.get(
+            reverse(
+                "analise_reserva",
+                kwargs={"slug": self.condominio.slug, "pk": self.reserva.pk},
+            )
+        )
+
+        self.assertContains(resposta, self.motivo)
+
+
 class CheckinTests(TestCase):
     def setUp(self):
         self.condominio, self.local, self.unidade = criar_base()
@@ -301,6 +364,31 @@ class RelatoriosTests(TestCase):
         )
 
         self.assertEqual(resposta.status_code, 403)
+
+    def test_relatorio_lista_recusas_e_motivos(self):
+        reserva = criar_reserva(
+            self.condominio,
+            self.local,
+            self.unidade,
+            self.morador,
+            status=Reserva.Status.EM_ANALISE,
+        )
+        self.client.force_login(self.sindico)
+        self.client.post(
+            reverse(
+                "rejeitar_reserva",
+                kwargs={"slug": self.condominio.slug, "pk": reserva.pk},
+            ),
+            {"motivo": "Comprovante fora do horário reservado."},
+        )
+
+        resposta = self.client.get(
+            reverse("relatorios", kwargs={"slug": self.condominio.slug}),
+            {"mes": timezone.localtime(reserva.inicio).strftime("%Y-%m")},
+        )
+
+        self.assertContains(resposta, "Recusas do mês")
+        self.assertContains(resposta, "Comprovante fora do horário reservado.")
 
 
 class WhatsAppTests(TestCase):

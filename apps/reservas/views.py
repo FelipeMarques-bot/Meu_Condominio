@@ -26,8 +26,10 @@ from apps.core.notifications import (
 from apps.core.permissoes import (
     pode_gerir,
     pode_ver_reserva,
+    reservas_bloqueadas,
     sindico_required,
     unidades_do_usuario,
+    unidades_para_reserva,
 )
 from apps.pagamentos import abacatepay
 from apps.pagamentos.brcode import gerar_payload, gerar_qr_data_uri
@@ -148,7 +150,8 @@ def reservar(request, slug, local_slug):
             "local": local,
             "configuracao": configuracao,
             "form": form,
-            "unidades": unidades_do_usuario(request.user, condominio),
+            "unidades": unidades_para_reserva(request.user, condominio),
+            "reserva_bloqueada": reservas_bloqueadas(request.user, condominio),
         },
     )
 
@@ -271,6 +274,7 @@ def minhas_reservas(request, slug):
             "esperas": esperas,
             "esperas_novas": esperas_avisadas_nao_vistas(request.user, condominio),
             "resultados_novos": resultados_nao_vistos(request.user, condominio),
+            "reserva_bloqueada": reservas_bloqueadas(request.user, condominio),
             "calendario": _calendario_do_mes(
                 request,
                 condominio,
@@ -878,6 +882,11 @@ def relatorios(request, slug):
         .annotate(quantidade=Count("id"), total=Sum("valor"))
         .order_by("-quantidade")[:10]
     )
+    recusas = (
+        reservas.filter(status=Reserva.Status.REJEITADA)
+        .select_related("local", "unidade", "solicitante")
+        .order_by("-atualizado_em")
+    )
 
     return render(
         request,
@@ -901,5 +910,6 @@ def relatorios(request, slug):
             "total_confirmado": total_confirmado,
             "por_local": por_local,
             "por_unidade": por_unidade,
+            "recusas": recusas,
         },
     )

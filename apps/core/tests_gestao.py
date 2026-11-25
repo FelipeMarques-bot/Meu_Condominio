@@ -452,3 +452,55 @@ class PlataformaTests(TestCase):
         resposta = self.client.get(reverse("plataforma_armazenamento"))
 
         self.assertRedirects(resposta, reverse("plataforma_entrar"))
+
+
+class BloqueioDeReservasTests(TestCase):
+    def setUp(self):
+        self.condominio, self.unidade = criar_base()
+        self.sindico = criar_usuario(
+            "sindico", self.unidade, VinculoUnidade.Papel.SINDICO
+        )
+        self.morador = criar_usuario(
+            "morador", self.unidade, VinculoUnidade.Papel.MORADOR
+        )
+        self.vinculo = VinculoUnidade.objects.get(
+            usuario=self.morador, unidade=self.unidade
+        )
+        self.url = reverse(
+            "vinculo_alternar_bloqueio", args=[self.condominio.slug, self.vinculo.pk]
+        )
+
+    def test_sindico_bloqueia_e_desbloqueia(self):
+        self.client.force_login(self.sindico)
+
+        resposta = self.client.post(self.url)
+
+        self.assertRedirects(
+            resposta,
+            reverse("unidade_editar", args=[self.condominio.slug, self.unidade.pk]),
+        )
+        self.vinculo.refresh_from_db()
+        self.assertTrue(self.vinculo.bloqueio_reservas)
+
+        self.client.post(self.url)
+        self.vinculo.refresh_from_db()
+        self.assertFalse(self.vinculo.bloqueio_reservas)
+
+    def test_morador_nao_pode_alternar_bloqueio(self):
+        self.client.force_login(self.morador)
+
+        resposta = self.client.post(self.url)
+
+        self.assertEqual(resposta.status_code, 403)
+        self.vinculo.refresh_from_db()
+        self.assertFalse(self.vinculo.bloqueio_reservas)
+
+    def test_editar_unidade_mostra_botao_de_bloquear(self):
+        self.client.force_login(self.sindico)
+
+        resposta = self.client.get(
+            reverse("unidade_editar", args=[self.condominio.slug, self.unidade.pk])
+        )
+
+        self.assertContains(resposta, "Bloquear reservas")
+        self.assertContains(resposta, self.url)

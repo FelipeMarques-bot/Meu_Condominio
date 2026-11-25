@@ -106,5 +106,10 @@ urlpatterns = [
         views.vinculo_redefinir_senha,
         name="vinculo_redefinir_senha",
     ),
+    path(
+        "c/<slug:slug>/vinculos/<int:pk>/bloquear/",
+        views.vinculo_alternar_bloqueio,
+        name="vinculo_alternar_bloqueio",
+    ),
     path("c/<slug:slug>/convite/<uuid:token>/", views.usar_convite, name="usar_convite"),
 ]

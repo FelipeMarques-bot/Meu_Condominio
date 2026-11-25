@@ -65,6 +65,29 @@ def unidades_do_usuario(usuario, condominio):
     ).distinct()
 
 
+def unidades_para_reserva(usuario, condominio):
+    if not usuario.is_authenticated:
+        return Unidade.objects.none()
+    return Unidade.objects.filter(
+        condominio=condominio,
+        vinculos__usuario=usuario,
+        vinculos__ativo=True,
+        vinculos__bloqueio_reservas=False,
+    ).distinct()
+
+
+def reservas_bloqueadas(usuario, condominio) -> bool:
+    if not usuario.is_authenticated:
+        return False
+    tem_bloqueio = VinculoUnidade.objects.filter(
+        usuario=usuario,
+        unidade__condominio=condominio,
+        ativo=True,
+        bloqueio_reservas=True,
+    ).exists()
+    return tem_bloqueio and not unidades_para_reserva(usuario, condominio).exists()
+
+
 def pode_ver_reserva(usuario, reserva) -> bool:
     if eh_admin_condominio(usuario, reserva.condominio):
         return True

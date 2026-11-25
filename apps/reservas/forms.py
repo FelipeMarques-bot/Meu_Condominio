@@ -4,11 +4,16 @@ from django import forms
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.core.permissoes import unidades_para_reserva
 from apps.usuarios.models import Unidade
 
 from .models import Local, Reserva
 
 CAMPO_TEXTO = {"class": "field"}
+MENSAGEM_BLOQUEIO_RESERVA = (
+    "Reservas bloqueadas para este morador. Entre em contato com o administrador "
+    "ou síndico para saber o motivo."
+)
 
 
 class ReservaForm(forms.Form):
@@ -35,14 +40,22 @@ class ReservaForm(forms.Form):
         self.condominio = condominio
         self.usuario = usuario
         self.local = local
-        self.fields["unidade"].queryset = Unidade.objects.filter(
-            condominio=condominio,
-            vinculos__usuario=usuario,
-            vinculos__ativo=True,
-        ).distinct()
+        self.fields["unidade"].queryset = unidades_para_reserva(usuario, condominio)
 
     def clean(self):
         cleaned = super().clean()
+        if "unidade" not in cleaned:
+            escolhida = self.data.get("unidade")
+            if escolhida and str(escolhida).isdigit():
+                bloqueada = Unidade.objects.filter(
+                    pk=int(escolhida),
+                    condominio=self.condominio,
+                    vinculos__usuario=self.usuario,
+                    vinculos__ativo=True,
+                    vinculos__bloqueio_reservas=True,
+                ).exists()
+                if bloqueada:
+                    self.add_error("unidade", MENSAGEM_BLOQUEIO_RESERVA)
         data = cleaned.get("data")
         hora_inicio = cleaned.get("hora_inicio")
         hora_fim = cleaned.get("hora_fim")
@@ -194,12 +207,25 @@ class ListaEsperaForm(forms.Form):
     def __init__(self, *args, condominio, usuario, local, **kwargs):
         super().__init__(*args, **kwargs)
         self.condominio = condominio
+        self.usuario = usuario
         self.local = local
-        self.fields["unidade"].queryset = Unidade.objects.filter(
-            condominio=condominio,
-            vinculos__usuario=usuario,
-            vinculos__ativo=True,
-        ).distinct()
+        self.fields["unidade"].queryset = unidades_para_reserva(usuario, condominio)
+
+    def clean(self):
+        cleaned = super().clean()
+        if "unidade" not in cleaned:
+            escolhida = self.data.get("unidade")
+            if escolhida and str(escolhida).isdigit():
+                bloqueada = Unidade.objects.filter(
+                    pk=int(escolhida),
+                    condominio=self.condominio,
+                    vinculos__usuario=self.usuario,
+                    vinculos__ativo=True,
+                    vinculos__bloqueio_reservas=True,
+                ).exists()
+                if bloqueada:
+                    self.add_error("unidade", MENSAGEM_BLOQUEIO_RESERVA)
+        return cleaned
 
     def clean_data(self):
         data = self.cleaned_data["data"]

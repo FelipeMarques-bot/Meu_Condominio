@@ -75,6 +75,11 @@ class VinculoUnidade(models.Model):
     )
     papel = models.CharField(max_length=20, choices=Papel.choices, default=Papel.MORADOR)
     ativo = models.BooleanField(default=True)
+    bloqueio_reservas = models.BooleanField(
+        default=False,
+        verbose_name="bloqueado para reservas",
+        help_text="Este morador não pode reservar nem entrar na lista de espera.",
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
