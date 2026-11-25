@@ -64,6 +64,11 @@ class Reserva(models.Model):
         EXPIRADA = "expirada", "Expirada"
         CANCELADA = "cancelada", "Cancelada"
 
+    class OcrStatus(models.TextChoices):
+        VERDE = "verde", "Confere"
+        AMARELO = "amarelo", "Conferir"
+        VERMELHO = "vermelho", "Divergente"
+
     condominio = models.ForeignKey(
         Condominio, on_delete=models.CASCADE, related_name="reservas"
     )
@@ -86,6 +91,13 @@ class Reserva(models.Model):
         blank=True,
     )
     comprovante_enviado_em = models.DateTimeField(null=True, blank=True)
+    ocr_status = models.CharField(
+        max_length=10, choices=OcrStatus.choices, blank=True, db_index=True
+    )
+    ocr_valor = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    ocr_data = models.DateField(null=True, blank=True)
+    ocr_observacao = models.CharField(max_length=300, blank=True)
+    ocr_processado_em = models.DateTimeField(null=True, blank=True)
     expira_em = models.DateTimeField(null=True, blank=True)
     prazo_analise_em = models.DateTimeField(null=True, blank=True)
     confirmado_em = models.DateTimeField(null=True, blank=True)

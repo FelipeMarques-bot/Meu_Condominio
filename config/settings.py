@@ -236,6 +236,10 @@ CONTATO_EMAIL = env(
     "CONTATO_EMAIL", "labintelligenceappoiments@gmail.com"
 )
 
+OCR_ATIVO = env_bool("OCR_ATIVO", True)
+OCR_IDIOMA = env("OCR_IDIOMA", "por+eng")
+OCR_TIMEOUT = int(env("OCR_TIMEOUT", "20"))
+
 TRIAL_DIAS = int(env("TRIAL_DIAS", "14"))
 TRIAL_JANELA_DIAS = int(env("TRIAL_JANELA_DIAS", "30"))
 ASSINATURA_DIAS = int(env("ASSINATURA_DIAS", "30"))

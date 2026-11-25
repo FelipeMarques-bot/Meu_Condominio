@@ -253,6 +253,14 @@ class ReservaFlowTests(TestCase):
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)
 
+    def test_agenda_tem_botao_sair_para_o_morador(self):
+        resposta = self.client.get(
+            reverse("agenda", kwargs={"slug": self.condominio.slug})
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, reverse("logout"))
+        self.assertContains(resposta, 'aria-label="Sair da conta"')
+
     def test_morador_nao_ve_reserva_de_outra_unidade(self):
         outra_unidade = Unidade.objects.create(
             condominio=self.condominio, bloco="B", numero="202"

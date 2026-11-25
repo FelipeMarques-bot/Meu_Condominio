@@ -13,8 +13,8 @@ class LocalAdmin(admin.ModelAdmin):
 
 @admin.register(Reserva)
 class ReservaAdmin(admin.ModelAdmin):
-    list_display = ("local", "unidade", "inicio", "fim", "status", "valor")
-    list_filter = ("status", "condominio", "local")
+    list_display = ("local", "unidade", "inicio", "fim", "status", "ocr_status", "valor")
+    list_filter = ("status", "ocr_status", "condominio", "local")
     search_fields = ("local__nome", "unidade__numero", "solicitante__username")
     date_hierarchy = "inicio"
     readonly_fields = ("criado_em", "atualizado_em")

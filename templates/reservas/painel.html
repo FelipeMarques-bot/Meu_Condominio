@@ -39,7 +39,13 @@
   <section class="mt-9">
     <div class="flex items-end justify-between gap-4">
       <h2 class="font-display text-2xl">Para analisar</h2>
-      <span class="text-xs text-muted">{{ pendentes|length }} na fila</span>
+      <span class="text-xs text-muted">
+        {{ pendentes|length }} na fila
+        {% if ocr_vermelhos or ocr_amarelos %}
+          · {{ ocr_vermelhos }} divergente{{ ocr_vermelhos|pluralize }}
+          · {{ ocr_amarelos }} para conferir
+        {% endif %}
+      </span>
     </div>
 
     {% if pendentes %}
@@ -61,6 +67,13 @@
                   {% if reserva.status == 'em_analise' %}<span class="analise-ponto h-1.5 w-1.5 rounded-full bg-warn"></span>{% endif %}
                   {{ reserva.get_status_display }}
                 </span>
+                {% if reserva.ocr_status == 'verde' %}
+                  <span class="pill border-ok/30 bg-ok/10 text-ok">Leitura: confere</span>
+                {% elif reserva.ocr_status == 'amarelo' %}
+                  <span class="pill border-warn/30 bg-warn/10 text-warn">Leitura: conferir</span>
+                {% elif reserva.ocr_status == 'vermelho' %}
+                  <span class="pill border-danger/30 bg-danger/10 text-danger">Leitura: divergente</span>
+                {% endif %}
                 {% if reserva.prazo_vencido %}
                   <span class="pill border-danger/30 bg-danger/10 text-danger">Prazo vencido</span>
                 {% endif %}

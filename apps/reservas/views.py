@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Count, Q, Sum
+from django.db.models import Case, Count, IntegerField, Q, Sum, Value, When
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -35,6 +35,7 @@ from apps.pagamentos.brcode import gerar_payload, gerar_qr_data_uri
 from .codigos import gerar_codigo_checkin
 from .forms import ComprovanteForm, ListaEsperaForm, ReservaForm
 from .models import ListaEspera, Local, Reserva
+from .ocr import analisar_comprovante
 from .prazos import liberar_lista_espera
 from .resultados import resultados_nao_vistos
 
@@ -399,11 +400,18 @@ def enviar_comprovante(request, slug, pk):
     limite_inicio = reserva.inicio - timedelta(hours=2)
     prazo = max(agora + timedelta(minutes=5), min(limite, limite_inicio))
 
-    reserva.comprovante = form.cleaned_data["comprovante"]
+    arquivo = form.cleaned_data["comprovante"]
+    ocr = analisar_comprovante(arquivo, reserva.valor, timezone.localdate(reserva.inicio))
+    reserva.comprovante = arquivo
     reserva.comprovante_enviado_em = agora
     reserva.prazo_analise_em = prazo
     reserva.status = Reserva.Status.EM_ANALISE
     reserva.motivo_rejeicao = ""
+    reserva.ocr_status = ocr.situacao
+    reserva.ocr_valor = ocr.valor
+    reserva.ocr_data = ocr.data
+    reserva.ocr_observacao = ocr.observacao
+    reserva.ocr_processado_em = agora
     reserva.save(
         update_fields=[
             "comprovante",
@@ -411,11 +419,22 @@ def enviar_comprovante(request, slug, pk):
             "prazo_analise_em",
             "status",
             "motivo_rejeicao",
+            "ocr_status",
+            "ocr_valor",
+            "ocr_data",
+            "ocr_observacao",
+            "ocr_processado_em",
             "atualizado_em",
         ]
     )
 
     notificar_nova_analise(reserva)
+    if ocr.situacao == Reserva.OcrStatus.VERMELHO:
+        messages.warning(
+            request,
+            "A leitura automática encontrou uma divergência. "
+            "O administrador vai conferir o arquivo.",
+        )
     messages.success(
         request,
         "Comprovante recebido. O administrador foi notificado e tem até "
@@ -469,9 +488,26 @@ def painel(request, slug):
     reservas = Reserva.objects.filter(condominio=condominio).select_related(
         "local", "unidade", "solicitante"
     )
-    pendentes = reservas.filter(
-        status__in=[Reserva.Status.AGUARDANDO_COMPROVANTE, Reserva.Status.EM_ANALISE]
-    ).order_by("inicio")
+    prioridade_ocr = Case(
+        When(ocr_status=Reserva.OcrStatus.VERMELHO, then=Value(0)),
+        When(ocr_status=Reserva.OcrStatus.AMARELO, then=Value(1)),
+        When(ocr_status=Reserva.OcrStatus.VERDE, then=Value(2)),
+        default=Value(3),
+        output_field=IntegerField(),
+    )
+    pendentes = (
+        reservas.filter(
+            status__in=[Reserva.Status.AGUARDANDO_COMPROVANTE, Reserva.Status.EM_ANALISE]
+        )
+        .annotate(ocr_prioridade=prioridade_ocr)
+        .order_by("ocr_prioridade", "inicio")
+    )
+    ocr_vermelhos = sum(
+        1 for reserva in pendentes if reserva.ocr_status == Reserva.OcrStatus.VERMELHO
+    )
+    ocr_amarelos = sum(
+        1 for reserva in pendentes if reserva.ocr_status == Reserva.OcrStatus.AMARELO
+    )
     confirmadas = reservas.filter(status=Reserva.Status.CONFIRMADA).count()
     agora = timezone.now()
     proximas = reservas.filter(
@@ -488,6 +524,8 @@ def painel(request, slug):
             "proximas": proximas,
             "total_confirmadas": confirmadas,
             "sla_vencido": sum(1 for reserva in pendentes if reserva.prazo_vencido),
+            "ocr_vermelhos": ocr_vermelhos,
+            "ocr_amarelos": ocr_amarelos,
         },
     )
 

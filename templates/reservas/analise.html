@@ -82,10 +82,34 @@
       </div>
 
       {% if reserva.status == 'em_analise' and reserva.comprovante %}
-        <div class="mt-5 rounded-2xl border border-warn/30 bg-warn/10 p-4 text-sm">
-          <p class="font-semibold">Confira o comprovante</p>
-          <p class="mt-1 text-xs leading-relaxed text-muted">
-            O sistema não lê o conteúdo do arquivo. Abra a imagem ou o PDF e verifique
+        <div class="mt-5 rounded-2xl border p-4 text-sm
+          {% if reserva.ocr_status == 'verde' %}border-ok/30 bg-ok/10
+          {% elif reserva.ocr_status == 'vermelho' %}border-danger/30 bg-danger/10
+          {% else %}border-warn/30 bg-warn/10{% endif %}">
+          <p class="font-semibold">
+            {% if reserva.ocr_status %}Leitura automática: {{ reserva.get_ocr_status_display }}{% else %}Confira o comprovante{% endif %}
+          </p>
+          {% if reserva.ocr_observacao %}
+            <p class="mt-1 text-xs leading-relaxed text-muted">{{ reserva.ocr_observacao }}</p>
+          {% endif %}
+          {% if reserva.ocr_valor or reserva.ocr_data %}
+            <dl class="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
+              {% if reserva.ocr_valor %}
+                <div>
+                  <dt class="font-semibold text-muted">Valor lido</dt>
+                  <dd class="mt-0.5 font-display text-base">R$ {{ reserva.ocr_valor|floatformat:2 }}</dd>
+                </div>
+              {% endif %}
+              {% if reserva.ocr_data %}
+                <div>
+                  <dt class="font-semibold text-muted">Data lida</dt>
+                  <dd class="mt-0.5">{{ reserva.ocr_data|date:"d/m/Y" }}</dd>
+                </div>
+              {% endif %}
+            </dl>
+          {% endif %}
+          <p class="mt-3 text-xs leading-relaxed text-muted">
+            A leitura é automática e pode errar. Abra a imagem ou o PDF e verifique
             se é um comprovante de pagamento, se a data é desta reserva e se o valor confere.
             Se algo estiver errado, recuse e explique o motivo ao morador.
           </p>

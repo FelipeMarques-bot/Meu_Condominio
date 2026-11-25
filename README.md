@@ -208,6 +208,14 @@ Comprovantes continuam no disco local (ou no R2, se configurado), porque o Cloud
 - Se preferir um agendador externo, defina `AGENDADOR_INTERNO=False` e chame `/tarefas/prazos/<TAREFAS_TOKEN>/` uma vez por dia.
 - Sem `TAREFAS_TOKEN`, o endpoint responde 404 e nada roda sozinho — os prazos continuam visíveis no painel, mas sem aviso automático.
 
+## Leitura automática do comprovante (OCR)
+
+- Ao enviar o comprovante, o app lê a imagem (ou a 1ª página do PDF) com **Tesseract** e confronta valor, data e indícios de pagamento com os dados da reserva.
+- A leitura não aprova nada sozinha: ela classifica a fila do síndico em **verde** (confere), **amarelo** (conferir — leitura parcial ou indisponível) e **vermelho** (divergente — valor ou data diferentes). A aprovação continua exigindo o checkbox de conferência manual.
+- Instale o binário do sistema: `tesseract-ocr` e `tesseract-ocr-por` no Debian/Ubuntu, `brew install tesseract` no macOS. Sem ele, o comprovante entra amarelo e o envio segue normal.
+- Variáveis: `OCR_ATIVO` (padrão `True`; com `False` tudo fica amarelo), `OCR_IDIOMA` (padrão `por+eng`, com fallback para `eng`) e `OCR_TIMEOUT` (segundos, padrão `20`).
+- Só os campos lidos (valor, data, situação e observação curta) são salvos no registro privado da reserva; o texto completo do comprovante não é armazenado.
+
 ## Planos
 
 | Plano | Preço/mês | Unidades | Espaços |
@@ -223,9 +231,8 @@ Os planos ficam no banco (`Plano`), editáveis no admin, e a landing lista só o
 
 1. Conciliação diária de cobranças Pix (consulta à API) para eventos perdidos.
 2. Pix dinâmico com Asaas atrás do mesmo interruptor.
-3. OCR de comprovante com Tesseract, regras de validação e fila de revisão.
-4. Notificações push PWA e envio de WhatsApp ao morador (hoje: e-mail, Telegram e avisos no app).
-5. Bloqueios por inadimplência, políticas automáticas, relatórios e assinatura do SaaS.
+3. Notificações push PWA e envio de WhatsApp ao morador (hoje: e-mail, Telegram e avisos no app).
+4. Bloqueios por inadimplência, políticas automáticas, relatórios e assinatura do SaaS.
 
 ## Segurança
 
