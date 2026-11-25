@@ -214,6 +214,7 @@ class ListaEspera(models.Model):
     )
     criado_em = models.DateTimeField(auto_now_add=True)
     avisado_em = models.DateTimeField(null=True, blank=True)
+    aviso_visto_em = models.DateTimeField(null=True, blank=True)
 
     objects = TenantManager()
     all_objects = models.Manager()

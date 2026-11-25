@@ -22,7 +22,10 @@ from django.utils.text import slugify
 from apps.core.storage import armazenamento_privado
 from apps.pagamentos.brcode import gerar_payload, gerar_qr_data_uri
 from apps.reservas.models import Local
-from apps.reservas.resultados import resultados_nao_vistos
+from apps.reservas.resultados import (
+    esperas_avisadas_nao_vistas,
+    resultados_nao_vistos,
+)
 from apps.usuarios.forms import CadastroConviteForm, ConviteForm, TelefoneForm
 from apps.usuarios.models import Convite, Unidade, Usuario, VinculoUnidade
 
@@ -570,6 +573,7 @@ def agenda(request, slug):
             "configuracao": configuracao,
             "locais": locais,
             "resultados_novos": resultados_nao_vistos(request.user, condominio),
+            "esperas_novas": esperas_avisadas_nao_vistas(request.user, condominio),
         },
     )
 

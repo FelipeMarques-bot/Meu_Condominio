@@ -119,6 +119,81 @@ class ListaEsperaTests(TestCase):
         entrada.refresh_from_db()
         self.assertEqual(entrada.status, ListaEspera.Status.AVISADO)
 
+    def test_recusa_tambem_libera_vaga_para_lista_de_espera(self):
+        entrada = ListaEspera.objects.create(
+            condominio=self.condominio,
+            local=self.local,
+            unidade=self.unidade,
+            solicitante=self.morador,
+            data=timezone.localdate() + timedelta(days=3),
+        )
+        reserva = criar_reserva(
+            self.condominio,
+            self.local,
+            self.unidade,
+            self.sindico,
+            status=Reserva.Status.EM_ANALISE,
+        )
+        entrada.data = timezone.localtime(reserva.inicio).date()
+        entrada.save(update_fields=["data"])
+        self.client.force_login(self.sindico)
+        mail.outbox.clear()
+
+        self.client.post(
+            reverse(
+                "rejeitar_reserva",
+                kwargs={"slug": self.condominio.slug, "pk": reserva.pk},
+            ),
+            {"motivo": "Comprovante ilegível"},
+        )
+
+        entrada.refresh_from_db()
+        self.assertEqual(entrada.status, ListaEspera.Status.AVISADO)
+        self.assertTrue(any("Vaga liberada" in m.subject for m in mail.outbox))
+
+    def test_painel_do_sindico_mostra_lista_de_espera(self):
+        ListaEspera.objects.create(
+            condominio=self.condominio,
+            local=self.local,
+            unidade=self.unidade,
+            solicitante=self.morador,
+            data=timezone.localdate() + timedelta(days=2),
+        )
+        self.client.force_login(self.sindico)
+
+        resposta = self.client.get(
+            reverse("painel", kwargs={"slug": self.condominio.slug})
+        )
+
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Lista de espera")
+        self.assertContains(resposta, self.local.nome)
+
+    def test_vaga_liberada_aparece_no_app_e_pode_ser_marcada_como_vista(self):
+        entrada = ListaEspera.objects.create(
+            condominio=self.condominio,
+            local=self.local,
+            unidade=self.unidade,
+            solicitante=self.morador,
+            data=timezone.localdate() + timedelta(days=2),
+            status=ListaEspera.Status.AVISADO,
+            avisado_em=timezone.now(),
+        )
+        self.client.force_login(self.morador)
+        url = reverse("minhas_reservas", kwargs={"slug": self.condominio.slug})
+
+        resposta = self.client.get(url)
+        self.assertContains(resposta, "Sua vaga liberou!")
+
+        self.client.post(
+            reverse("marcar_esperas_vistas", kwargs={"slug": self.condominio.slug})
+        )
+        entrada.refresh_from_db()
+        self.assertIsNotNone(entrada.aviso_visto_em)
+
+        resposta = self.client.get(url)
+        self.assertNotContains(resposta, "Sua vaga liberou!")
+
 
 class CheckinTests(TestCase):
     def setUp(self):

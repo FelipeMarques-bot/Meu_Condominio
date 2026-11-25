@@ -37,7 +37,7 @@ from .forms import ComprovanteForm, ListaEsperaForm, ReservaForm
 from .models import ListaEspera, Local, Reserva
 from .ocr import analisar_comprovante
 from .prazos import liberar_lista_espera
-from .resultados import resultados_nao_vistos
+from .resultados import esperas_avisadas_nao_vistas, resultados_nao_vistos
 
 HOLD_HORAS = 2
 
@@ -137,6 +137,7 @@ def reservar(request, slug, local_slug):
             condominio=condominio,
             usuario=request.user,
             local=local,
+            initial={"data": request.GET.get("data", "")},
         )
 
     return render(
@@ -268,6 +269,7 @@ def minhas_reservas(request, slug):
             "condominio": condominio,
             "reservas": reservas,
             "esperas": esperas,
+            "esperas_novas": esperas_avisadas_nao_vistas(request.user, condominio),
             "resultados_novos": resultados_nao_vistos(request.user, condominio),
             "calendario": _calendario_do_mes(
                 request,
@@ -286,6 +288,17 @@ def marcar_resultados_vistos(request, slug):
         raise Http404
     resultados_nao_vistos(request.user, condominio).update(
         resultado_visto_em=timezone.now()
+    )
+    return redirect("minhas_reservas", slug=condominio.slug)
+
+
+@login_required
+def marcar_esperas_vistas(request, slug):
+    condominio = _condominio(request)
+    if request.method != "POST":
+        raise Http404
+    esperas_avisadas_nao_vistas(request.user, condominio).update(
+        aviso_visto_em=timezone.now()
     )
     return redirect("minhas_reservas", slug=condominio.slug)
 
@@ -509,6 +522,12 @@ def painel(request, slug):
         1 for reserva in pendentes if reserva.ocr_status == Reserva.OcrStatus.AMARELO
     )
     confirmadas = reservas.filter(status=Reserva.Status.CONFIRMADA).count()
+    esperas = (
+        ListaEspera.objects.filter(condominio=condominio)
+        .exclude(status=ListaEspera.Status.CANCELADO)
+        .select_related("local", "unidade", "solicitante")
+        .order_by("data", "criado_em")
+    )
     agora = timezone.now()
     proximas = reservas.filter(
         status=Reserva.Status.CONFIRMADA,
@@ -521,6 +540,7 @@ def painel(request, slug):
         {
             "condominio": condominio,
             "pendentes": pendentes,
+            "esperas": esperas,
             "proximas": proximas,
             "total_confirmadas": confirmadas,
             "sla_vencido": sum(1 for reserva in pendentes if reserva.prazo_vencido),
@@ -635,6 +655,7 @@ def rejeitar_reserva(request, slug, pk):
     )
 
     notificar_reserva_rejeitada(reserva)
+    liberar_lista_espera(reserva)
     messages.success(request, "Comprovante recusado e morador notificado.")
     return redirect("analise_reserva", slug=slug, pk=pk)
 

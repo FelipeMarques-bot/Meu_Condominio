@@ -13,7 +13,7 @@ class UsuarioAdmin(UserAdmin):
 
 @admin.register(Unidade)
 class UnidadeAdmin(admin.ModelAdmin):
-    list_display = ("rotulo", "condominio", "bloco", "numero")
+    list_display = ("rotulo", "condominio", "bloco", "numero", "limite_reservas_mes")
     list_filter = ("condominio",)
     search_fields = ("bloco", "numero")
 

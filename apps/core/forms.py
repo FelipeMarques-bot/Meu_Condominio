@@ -195,10 +195,13 @@ class LocalForm(forms.ModelForm):
 class UnidadeForm(forms.ModelForm):
     class Meta:
         model = Unidade
-        fields = ["bloco", "numero"]
+        fields = ["bloco", "numero", "limite_reservas_mes"]
         widgets = {
             "bloco": forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "A (opcional)"}),
             "numero": forms.TextInput(attrs={**CAMPO_TEXTO, "placeholder": "101"}),
+            "limite_reservas_mes": forms.NumberInput(
+                attrs={**CAMPO_TEXTO, "min": 0, "placeholder": "Padrão do condomínio"}
+            ),
         }
 
     def __init__(self, *args, condominio=None, **kwargs):

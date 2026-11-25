@@ -10,9 +10,10 @@ SaaS multi-condomínio para reserva de espaços: agenda no celular, Pix com comp
 - Isolamento multi-tenant por `condominio_id` com `TenantMiddleware`, `TenantManager` e testes de vazamento.
 - Modelos: `Condominio`, `ConfiguracaoCondominio`, `Usuario`, `Unidade`, `VinculoUnidade`, `Convite`, `Local` e `Reserva`.
 - Login, convite por link com cadastro do morador e vínculo automático à unidade.
-- Reserva com antecedência configurável, limite mensal por unidade, hold de 2 horas e bloqueio de conflito.
+- Reserva com antecedência configurável, limite mensal por unidade (com override por lote), hold de 2 horas e bloqueio de conflito.
 - Pix manual com BR Code (QR e copia e cola), envio de comprovante e prazo de análise do síndico.
-- Painel do síndico com fila de análise, confirmação com código de check-in, recusa com motivo e e-mails automáticos.
+- Painel do síndico com fila de análise, lista de espera, confirmação com código de check-in, recusa com motivo e e-mails automáticos.
+- Lista de espera com aviso automático por e-mail e no app quando a data libera.
 - Painel do morador com calendário de papel (seleção de mês) e marcações manuscritas das reservas por dia.
 - Onboarding self-service em `/criar/`: condomínio novo, primeira unidade e conta de síndico, com 14 dias de teste.
 - Painel da plataforma para o dono do SaaS criar condomínios e acompanhar trial, unidades, espaços e reservas.

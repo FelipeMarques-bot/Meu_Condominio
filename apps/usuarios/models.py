@@ -34,6 +34,11 @@ class Unidade(models.Model):
         default=False,
         help_text="Unidade técnica do síndico/administradora; não conta como lote.",
     )
+    limite_reservas_mes = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="Reservas por mês deste lote. Vazio usa o limite do condomínio; 0 é ilimitado.",
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:

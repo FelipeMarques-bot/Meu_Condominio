@@ -22,6 +22,11 @@ urlpatterns = [
         views.marcar_resultados_vistos,
         name="marcar_resultados_vistos",
     ),
+    path(
+        "c/<slug:slug>/reservas/esperas/visto/",
+        views.marcar_esperas_vistas,
+        name="marcar_esperas_vistas",
+    ),
     path("c/<slug:slug>/reservas/<int:pk>/", views.reserva_detalhe, name="reserva_detalhe"),
     path("c/<slug:slug>/reservas/<int:pk>/qr/", views.reserva_qr, name="reserva_qr"),
     path(

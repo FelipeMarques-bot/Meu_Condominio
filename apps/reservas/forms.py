@@ -96,25 +96,29 @@ class ReservaForm(forms.Form):
         if conflito:
             self.add_error("hora_inicio", "Este horário já está reservado. Escolha outro.")
 
-        if configuracao.limite_reservas_mes:
-            inicio_mes = timezone.localtime(agora).replace(
+        unidade = cleaned.get("unidade")
+        limite = configuracao.limite_reservas_mes
+        if unidade and unidade.limite_reservas_mes is not None:
+            limite = unidade.limite_reservas_mes
+        if unidade and limite:
+            inicio_mes = timezone.localtime(inicio).replace(
                 day=1, hour=0, minute=0, second=0, microsecond=0
             )
             fim_mes = (inicio_mes + timedelta(days=32)).replace(day=1)
             quantidade = (
                 Reserva.objects.filter(
-                    unidade=cleaned.get("unidade"),
+                    unidade=unidade,
                     inicio__gte=inicio_mes,
                     inicio__lt=fim_mes,
                 )
                 .exclude(status__in=[Reserva.Status.CANCELADA, Reserva.Status.EXPIRADA])
                 .count()
             )
-            if quantidade >= configuracao.limite_reservas_mes:
+            if quantidade >= limite:
                 self.add_error(
                     "unidade",
-                    f"Esta unidade já atingiu o limite de "
-                    f"{configuracao.limite_reservas_mes} reservas no mês.",
+                    f"Esta unidade já atingiu o limite de {limite} "
+                    f"reserva{'' if limite == 1 else 's'} em {inicio_mes:%m/%Y}.",
                 )
 
         cleaned["inicio"] = inicio
